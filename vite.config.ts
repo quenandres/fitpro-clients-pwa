@@ -1,18 +1,33 @@
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
+import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   plugins: [
+    tanstackRouter({
+      target: 'react',
+      autoCodeSplitting: true,
+    }),
+
     react(),
+
+    tailwindcss(),
 
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: 'auto',
 
       manifest: {
         name: 'GYMApp',
         short_name: 'GYMApp',
-        description: 'Tu plataforma de entrenamiento',
+        description: 'Plataforma de entrenamiento',
         theme_color: '#000000',
         background_color: '#ffffff',
         display: 'standalone',
@@ -37,4 +52,10 @@ export default defineConfig({
       },
     }),
   ],
+
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
 })
