@@ -32,7 +32,7 @@ guardar — y nada más. El resto es superficie neutra y aire.
 | **Números grandes** | Peso, reps y series se leen a un metro. Son el contenido, no la decoración. |
 | **Tokens primero** | Colores vía utilidades mapeadas a tokens. Nunca hex crudo en componentes. |
 | **shadcn antes que CSS custom** | Agregar el componente con el CLI y componerlo. Inventar una variante es el último recurso. |
-| **Pocas pantallas** | Cinco rutas (`CLAUDE.md §7`). Si una idea necesita una sexta, probablemente no es de esta app. |
+| **Pocas pantallas** | Siete rutas (`CLAUDE.md §7`), cinco en la nav. Si una idea necesita más, probablemente no es de esta app. |
 | **Español en la UI** | Etiquetas, vacíos, errores y toasts en español. Tono directo, motivador, sin marketing vacío. |
 | **Accesibilidad mínima** | Foco visible, `aria-label` en botones de solo icono, `role` en vacío/error, `prefers-reduced-motion`. |
 | **Honestidad de estado** | Si una serie no se sincronizó, se dice. Nunca fingir guardado. |
@@ -55,10 +55,8 @@ de shadcn; no existe una variable `--brand` paralela.
 | Verde marca (dark) | `#22c55e` |
 | Sobre marca | `#ffffff` |
 
-> **Estado hoy:** `src/index.css` todavía tiene los **tokens neutros por
-> defecto de shadcn** (`--primary: oklch(0.205 0 0)`, un casi-negro). La marca
-> **aún no está aplicada**. Ver §3 para el cambio concreto, que se hace una
-> sola vez en `:root` y `.dark`.
+> **Estado hoy (2026-09-09):** marca verde aplicada en `--primary` (`:root` y
+> `.dark`) en `src/index.css`.
 
 - **No** crear un token `--brand`: aquí la marca *es* `--primary`.
 - **No** verdes neón arbitrarios ni una segunda paleta.
@@ -112,14 +110,14 @@ no las variables a mano.
 
 - Variante declarada como `@custom-variant dark (&:is(.dark *))`: el modo
   oscuro se activa con la clase **`.dark`** en `document.documentElement`.
-- El proveedor de tema que la aplica **todavía no existe**. Al crearlo,
-  respetar esa clase, persistir la preferencia y por defecto seguir al sistema.
+- **`ThemeProvider`** en `src/providers/theme-provider.tsx`: persiste preferencia
+  (claro / oscuro / sistema) y aplica `.dark` en `documentElement`.
 - **Oscuro es el modo esperado en el gimnasio** (luz baja, pantalla cerca de la
   cara). Toda pantalla nueva se prueba primero en `.dark`.
 
-### Aplicar la marca (pendiente, una sola vez)
+### Marca aplicada (2026-09-09)
 
-Sustituir en `src/index.css` los cuatro valores neutros:
+Valores en `src/index.css`:
 
 ```css
 :root {
@@ -131,10 +129,6 @@ Sustituir en `src/index.css` los cuatro valores neutros:
   --primary-foreground: oklch(0.145 0 0);
 }
 ```
-
-Los valores oklch son conversiones aproximadas: **verificar contraste real**
-(≥ 4.5:1 del texto sobre `--primary`) antes de fijarlos y ajustar `L` si no
-cumple. Al hacerlo, actualizar esta sección para que deje de decir "pendiente".
 
 ### Reglas
 
@@ -194,7 +188,7 @@ no ver mucho de una vez.
 | Padding de card | 16px |
 | Gap entre cards de una lista | 12px |
 | Gap de sección | 24px |
-| Ancho máximo de contenido | `max-w-md` centrado (§11) |
+| Ancho máximo de contenido | `max-w-6xl` centrado en `md+` (§11); formularios auth `max-w-md` |
 | Espacio inferior reservado | altura de la bottom nav + `env(safe-area-inset-bottom)` |
 
 ### Radios
@@ -223,30 +217,29 @@ salve el fondo**. Toda barra fija respeta `env(safe-area-inset-bottom)` y
 
 ## 6. Layout y shell
 
-No hay `AppShell` todavía. Cuando se cree (primera pantalla real), este es el
-contrato:
+**Implementado:** `src/components/AppShell.tsx`
 
 ```
 <AppShell>
-├── header opcional (título de pantalla; NO una navbar cargada de acciones)
-├── <main>  px-4, max-w-md mx-auto, padding inferior = nav + safe area
-└── bottom nav fija (4 items) — oculta en el player
+├── header (md+): top nav horizontal — 5 items
+├── <main>  px-4, max-w-6xl mx-auto, padding inferior = nav + safe area
+└── bottom nav (< md): 5 items + safe area — oculta en player y auth
 ```
 
-### Bottom nav — 4 items
+### Nav — 5 items (2026-09-09)
 
 | Item | Ruta | Icono (lucide) |
 |------|------|----------------|
 | Hoy | `/` | `Home` |
 | Plan | `/plan` | `CalendarDays` |
 | Historial | `/historial` | `History` |
+| Progreso | `/progreso` | `Images` |
 | Perfil | `/perfil` | `User` |
 
-- Activo = `text-primary` + fondo `bg-primary/10`. Inactivo =
-  `text-muted-foreground`.
-- Altura ~64px + safe area. Objetivo táctil ≥ 48px por item.
-- **El player (`/sesion/$sesionId`) la oculta**: es inmersivo y tiene su propia
-  barra de acción abajo.
+- `< md`: bottom nav fija. `md+`: barra superior horizontal (mismos 5 items).
+- Activo = `text-primary` + `bg-primary/10`. Inactivo = `text-muted-foreground`.
+- Objetivo táctil ≥ 48px por item.
+- **Oculta en:** `/login`, `/register`, `/sesion/$sesionId`.
 
 ### Z-index
 
@@ -330,11 +323,19 @@ copia de otro repo.
 | `Badge` | [src/components/ui/badge.tsx](src/components/ui/badge.tsx) |
 | `Button` | [src/components/ui/button.tsx](src/components/ui/button.tsx) |
 | `Card` | [src/components/ui/card.tsx](src/components/ui/card.tsx) |
+| `Input` | [src/components/ui/input.tsx](src/components/ui/input.tsx) |
+| `Label` | [src/components/ui/label.tsx](src/components/ui/label.tsx) |
+| `Sheet` | [src/components/ui/sheet.tsx](src/components/ui/sheet.tsx) |
+| `Dialog` | [src/components/ui/dialog.tsx](src/components/ui/dialog.tsx) |
+| `Progress` | [src/components/ui/progress.tsx](src/components/ui/progress.tsx) |
+| `Skeleton` | [src/components/ui/skeleton.tsx](src/components/ui/skeleton.tsx) |
+| `Separator` | [src/components/ui/separator.tsx](src/components/ui/separator.tsx) |
+| `Switch` | [src/components/ui/switch.tsx](src/components/ui/switch.tsx) |
+| `Sonner` | [src/components/ui/sonner.tsx](src/components/ui/sonner.tsx) |
 
-### Probablemente necesarios (agregar cuando toque, no antes)
+### Probablemente necesarios después
 
-`input`, `label`, `form`, `sheet`, `dialog`, `drawer`, `progress`, `separator`,
-`skeleton`, `sonner` (toasts), `tabs`, `switch`, `select`.
+`form`, `drawer`, `tabs`, `select`.
 
 ### Botones
 
@@ -418,13 +419,16 @@ que retrasan el siguiente registro.
 
 ## 11. Responsive
 
+Mobile-first; **100% responsive** en tablet y escritorio (`CLAUDE.md` C6, 2026-09-09).
+
 | Breakpoint | Comportamiento |
 |------------|----------------|
-| `< md` | El caso real. Bottom nav, overlays como bottom sheet, CTAs full-width. |
-| `≥ md` | Contenido centrado en `max-w-md`; **no** estirar a un layout de escritorio ni sacar una sidebar. |
+| `< md` | Una columna, bottom nav, overlays en sheet, CTAs full-width, player apilado. |
+| `md+` | Top nav de 5 items. Contenido `max-w-6xl`. Dos columnas donde aporte (Hoy, Plan, Historial, Player, Progreso, Perfil). |
+| `lg+` | Mismo layout `md+` con más aire; no un tercer breakpoint de producto. |
 
-Esta app no tiene versión de escritorio como objetivo (`CLAUDE.md §6`, C6). El
-desktop es un teléfono grande y centrado.
+No hay sidebar de gestión ni layout de cockpit de entrenadores. Probar cada
+pantalla en **375px y ~1280px**, en `.dark`.
 
 ---
 
@@ -471,8 +475,8 @@ Cuando `/historial` o `/perfil` muestren progreso:
 
 ## 14. Checklist — nueva pantalla
 
-- [ ] Cabe en las 5 rutas (`CLAUDE.md §7`); si no, revisar el alcance.
-- [ ] `max-w-md`, `px-4`, padding inferior por nav + safe area.
+- [ ] Cabe en las rutas de `CLAUDE.md §7`; si no, revisar el alcance.
+- [ ] `max-w-6xl` en `md+`, `px-4`, padding inferior por nav + safe area.
 - [ ] Tokens/utilidades de shadcn — sin hex, sin `rounded-[…]`.
 - [ ] Tipografía según §4; un `display`; métricas en `tabular-nums`.
 - [ ] Acción primaria única, `--primary`, ancho completo, en la thumb zone.
@@ -497,25 +501,22 @@ Cuando `/historial` o `/perfil` muestren progreso:
 | Spinner centrado en vez de skeleton | No comunica qué va a aparecer |
 | Toast para el estado offline | Desaparece justo cuando importa |
 | Confeti / gamificación pesada | Estorba entre serie y serie |
-| Sidebar o layout de escritorio | Esta app es un teléfono |
+| Sidebar de gestión o cockpit de entrenadores | Esta app es para quien entrena, no para prescribir |
 | Dar por guardado lo que no confirmó el servidor | Corrompe el log, que es el producto |
 
 ---
 
 ## 16. Referencias vivas
 
-Este repo está en scaffold: **todavía no hay pantalla de referencia**. La
-primera pantalla real que se construya (previsiblemente `/login` o `/`) pasa a
-ser la referencia canónica y debe listarse aquí.
-
 | Tipo | Archivo |
 |------|---------|
 | Tokens y base | [src/index.css](src/index.css) |
 | Componentes UI | [src/components/ui/](src/components/ui/) |
 | Config de shadcn | [components.json](components.json) |
-| Shell / nav | _pendiente_ |
-| Player | _pendiente_ |
-| Formulario en sheet | _pendiente_ |
+| Shell / nav | [src/components/AppShell.tsx](src/components/AppShell.tsx) |
+| Player | [src/routes/_authenticated/sesion.$sesionId.tsx](src/routes/_authenticated/sesion.$sesionId.tsx) |
+| Auth (login/register) | [src/routes/login.tsx](src/routes/login.tsx), [register.tsx](src/routes/register.tsx) |
+| Formulario en sheet | [src/routes/_authenticated/progreso.tsx](src/routes/_authenticated/progreso.tsx) |
 
 ---
 

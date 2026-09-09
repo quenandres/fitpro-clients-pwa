@@ -23,9 +23,10 @@ el historial, el perfil — está al servicio de eso.
 - **Fuera de alcance:** creación/edición de rutinas y planes, gestión de otras
   personas, calendario de terceros, comunidades, pagos, IA. Si una tarea pide
   eso, cuestionarla (§9.4).
-- **Estado hoy (2026-09-09):** **scaffold**. Vite + React 19 + TanStack Router
-  + shadcn/ui recién inicializados; `src/App.tsx` sigue siendo la landing del
-  template de Vite. No hay rutas, ni auth, ni dominio, ni iconos de PWA. Ver §5.
+- **Estado hoy (2026-09-09):** **mapa de pantallas implementado**. Rutas, shell,
+  auth real contra gateway, player y pantallas con datos prototipo. Faltan
+  endpoints de dominio (series, plan, fotos) en `gym-gateway` — ver
+  [GATEWAY.md](./GATEWAY.md). Iconos PWA aún pendientes.
 
 ### Relación con los repos hermanos
 
@@ -46,18 +47,18 @@ hay que leer su documentación para trabajar aquí.
 | Capa | Hoy | Objetivo |
 |---|---|---|
 | App | React 19.2 + Vite 8 + TypeScript ~6.0 (estricto) | — |
-| Routing | **TanStack Router v1** + `@tanstack/router-plugin` (file-based, `autoCodeSplitting`) — cableado en `vite.config.ts`, **sin rutas creadas** | Árbol de §7 |
-| Estado servidor | **TanStack Query v5** instalado, **sin `QueryClientProvider`** en `src/main.tsx` | Fuente de datos de plan/sesiones |
-| Estado UI efímero | Zustand 5 instalado, **sin stores** | Runtime del player (serie actual, timer) |
-| UI kit | **shadcn/ui** (`style: base-nova`, `baseColor: neutral`) sobre **Base UI** (`@base-ui/react`) — hay 4 componentes: `avatar`, `badge`, `button`, `card` | Set mínimo del player + listas |
-| Estilos | Tailwind 4 (`@tailwindcss/vite`) + tokens shadcn en `src/index.css` + `tw-animate-css` | Marca aplicada sobre esa base (`DESIGN.md §3`) |
+| Routing | **TanStack Router v1** file-based en `src/routes/` | §7 |
+| Estado servidor | **TanStack Query v5** montado en `main.tsx` | Fuente de datos de plan/sesiones (pendiente cablear) |
+| Estado UI efímero | **Zustand** — `store/player-store.ts` (runtime del player) | Serie actual, timer, descanso |
+| UI kit | **shadcn/ui** (`base-nova`) — avatar, badge, button, card, input, label, sheet, dialog, progress, skeleton, separator, switch, sonner | §8 DESIGN |
+| Estilos | Tailwind 4 + tokens shadcn; **marca verde en `--primary`** (`DESIGN.md §3`) | — |
 | Tipografía | **Geist Variable** (`@fontsource-variable/geist`), `--font-sans` / `--font-heading` | Ver `DESIGN.md §4` |
 | Iconos | `lucide-react` | — |
 | PWA | `vite-plugin-pwa` (`registerType: autoUpdate`, manifest `GYMApp`) — **faltan `public/pwa-192x192.png` y `pwa-512x512.png`** | Instalable; offline real después del MVP |
 | Compilador | **React Compiler** vía `babel-plugin-react-compiler` + `@rolldown/plugin-babel` | — |
-| Backend | **`../gym-gateway`** (FastAPI → Supabase Auth + PostgREST; JWT ES256 vía JWKS; RBAC server-side) — **sin cliente HTTP en este repo todavía** | Cliente propio en `src/lib/gateway/` |
-| Supabase directo | `@supabase/supabase-js` **instalado pero sin usar** — decisión pendiente (§5.3) | Por defecto: **no**, todo por el gateway |
-| Validación runtime | **Zod no instalado** | Validar toda respuesta del gateway (§6, C4) |
+| Backend | **`../gym-gateway`** — cliente en `src/lib/gateway/` (auth operativo) | Endpoints de dominio pendientes — [GATEWAY.md](./GATEWAY.md) |
+| Supabase directo | `@supabase/supabase-js` instalado pero **sin usar** (C1) | Todo por el gateway |
+| Validación runtime | **Zod** — schemas en `lib/gateway/schemas.ts` | Ampliar con contratos de dominio |
 | Tests | — (sin Vitest, sin `*.test.ts`) | Vitest + @testing-library/react |
 
 **Node.js:** el sistema local tiene **v18.19.1**; Vite 8 pide Node ≥20.19/22.12
@@ -73,37 +74,23 @@ ausentes.
 
 ```
 fitpro-clients/
-├── public/
-│   ├── favicon.svg
-│   └── icons.svg              # sprite del template Vite (se va con §5.1)
+├── public/favicon.svg
 ├── src/
-│   ├── main.tsx               # createRoot + <App /> — sin providers todavía
-│   ├── App.tsx                # LANDING DEL TEMPLATE DE VITE — a reemplazar (§5.1)
-│   ├── App.css                # CSS del template — a borrar con App.tsx
-│   ├── index.css              # Tailwind 4 + tokens shadcn (:root / .dark) + Geist
-│   ├── assets/                # hero.png, react.svg, vite.svg — del template
-│   ├── components/ui/         # shadcn: avatar, badge, button, card
-│   └── lib/utils.ts           # re-export de `cn`
-├── components.json            # config shadcn (aliases @/…, style base-nova)
-├── vite.config.ts             # tanstackRouter + react + tailwind + VitePWA + alias @
-├── tsconfig.app.json          # estricto: noUnusedLocals/Parameters, paths @/*
-├── CLAUDE.md                  # este archivo
-├── DESIGN.md                  # guía de diseño
-└── README.md                  # README del template de Vite (desactualizado)
-```
-
-**Estructura objetivo de `src/`** — crear solo lo que haga falta, sin adelantar
-carpetas vacías:
-
-```
-src/
-├── routes/          # árbol file-based (routeTree.gen.ts es GENERADO, no editar)
-├── components/ui/   # shadcn
-├── components/…     # componentes de dominio (player, plan, sesión)
-├── lib/gateway/     # cliente HTTP propio: auth, sesión, errores, schemas
-├── store/           # zustand, solo runtime del player
-├── hooks/
-└── types/           # modelo de dominio en español
+│   ├── main.tsx               # QueryClientProvider → ThemeProvider → AuthProvider → Router
+│   ├── app-router.tsx         # RouterProvider con contexto de auth
+│   ├── router.ts              # createRouter + queryClient
+│   ├── routes/                # file-based (routeTree.gen.ts GENERADO)
+│   ├── components/            # AppShell, PrototypeBanner, SesionPreview, ui/
+│   ├── providers/             # auth-provider, theme-provider
+│   ├── lib/gateway/           # cliente HTTP + stubs series/fotos
+│   ├── lib/mock/              # datos prototipo hasta endpoints reales
+│   ├── store/player-store.ts
+│   ├── types/dominio.ts
+│   └── index.css
+├── .env.example               # VITE_GATEWAY_URL
+├── GATEWAY.md                 # contrato pendiente con gym-gateway
+├── CLAUDE.md
+└── DESIGN.md
 ```
 
 ---
@@ -124,23 +111,17 @@ npx shadcn@latest add <componente>
 # cd ../gym-gateway && uvicorn app.main:app --reload
 ```
 
-**Variables de entorno:** este repo **no tiene `.env` ni `.env.example`
-todavía**. Al cablear el backend, crear ambos con `VITE_GATEWAY_URL` como única
-variable obligatoria. No agregar `VITE_SUPABASE_*` sin resolver §5.3.
+**Variables de entorno:** `.env.example` con `VITE_GATEWAY_URL`. Copiar a `.env`
+antes de probar auth. No agregar `VITE_SUPABASE_*` (C1).
 
 ---
 
 ## 5. Advertencias críticas (leer antes de editar)
 
-1. **Esto es un scaffold, no una app.** `src/App.tsx` y `src/App.css` son la
-   landing del template de Vite (contador, logos, links a Discord). Cualquier
-   tarea real empieza por reemplazarlos; `src/assets/*` y `public/icons.svg` se
-   van con ellos. **Esta es la única limpieza autorizada de entrada** — no hay
-   más código muerto que borrar.
-2. **Nada está cableado en `src/main.tsx`.** Router, Query y el tema están
-   instalados/decididos pero **no montados**. Antes de asumir "el router no
-   funciona": no hay `RouterProvider` ni `src/routes/` todavía. Orden de
-   montaje esperado: `QueryClientProvider` → `AuthProvider` → `RouterProvider`.
+1. **Template de Vite eliminado.** `App.tsx`, `App.css`, `public/icons.svg` ya
+   no existen. No borrar código "por estética" fuera de eso.
+2. **`main.tsx` montado:** `QueryClientProvider` → `ThemeProvider` →
+   `AuthProvider` → `RouterProvider` (vía `app-router.tsx`).
 3. **`@supabase/supabase-js` está instalado y contradice C1.** La decisión
    vigente es que **todo** el tráfico pasa por `gym-gateway` (una sola puerta,
    con RBAC y RLS server-side). **No instanciar el cliente de Supabase sin
@@ -154,14 +135,12 @@ variable obligatoria. No agregar `VITE_SUPABASE_*` sin resolver §5.3.
 5. **El rol de esta app es `client`.** El gateway ya hace RBAC server-side; el
    gating del frontend es barrera secundaria, no la principal. No exponer
    pantallas de gestión (rutinas, otras personas, catálogos).
-6. **El modelo de dominio todavía no existe aquí.** Se define en `src/types/`
-   **a partir del contrato del gateway**, no copiando tipos de otro repo. Dos
-   reglas duras: ejercicios referenciados por **`ejercicio_id`**, nunca por
-   nombre; y nada de `as Tipo` sobre un `fetch` (§6, C4).
-7. **El backend del loop puede no estar listo.** Si no existe el endpoint que
-   persiste series, esta app no tiene write path. Verificarlo en
-   `../gym-gateway` antes de prometer guardado, y **avisar al usuario** si la
-   tarea exige cambios en ese repo.
+6. **Dominio en `src/types/dominio.ts`.** Tipos derivados del contrato del
+   gateway; hoy Hoy/Plan/Historial usan mock en `lib/mock/`. Reglas: **`ejercicio_id`**
+   nunca nombre como clave; Zod en respuestas del gateway (C4).
+7. **Player y Progreso son prototipo.** No hay endpoint de series ni Storage de
+   fotos en `gym-gateway`. Ver [GATEWAY.md](./GATEWAY.md). No prometer guardado
+   real hasta que existan.
 8. **shadcn/ui: agregar, no reescribir.** Los componentes de
    `src/components/ui/` los genera el CLI (`npx shadcn@latest add`). No
    escribirlos a mano; editarlos solo para adaptarlos a tokens de marca, y
@@ -193,8 +172,10 @@ anotarla aquí con fecha.
 - **C4 — Zod para todo lo que entra del exterior.** Instalarlo con la primera
   llamada real al gateway; los tipos de dominio se derivan de los schemas.
 - **C5 — Ejercicios por ID, nunca por nombre.**
-- **C6 — Mobile-first sin versión de escritorio.** El desktop es un teléfono
-  centrado (`DESIGN.md §11`).
+- **C6 — Mobile-first + layout real en `md+` (2026-09-09).** Sustituye «desktop =
+  teléfono centrado». En móvil: bottom nav; en `md+`: top nav horizontal, contenido
+  hasta `max-w-6xl`, dos columnas donde aporte. Sin sidebar de gestión
+  (`DESIGN.md §11`).
 - **C7 — Instalable ahora, offline después.** La PWA instalable entra en el
   MVP; la sincronización offline real, no.
 - **C8 — Independencia de repos.** No se importa código de `../fitpro` ni de
@@ -202,9 +183,12 @@ anotarla aquí con fecha.
   y se re-declara aquí.
 - **C9 — Honestidad de guardado.** Nada se muestra como registrado hasta que el
   servidor lo confirma (`DESIGN.md §7`).
-- **Pendientes de decidir:** nombre definitivo del producto/manifest; si hay
-  `/register` abierto o solo invitación; Sentry/PostHog antes de producción;
-  Vitest.
+- **C10 — `/register` abierto (2026-09-09).** Alta pública como `client`; falta
+  que el gateway asigne rol en signup.
+- **C11 — Nav de 5 items (2026-09-09).** Hoy, Plan, Historial, Progreso, Perfil.
+  El player oculta la nav.
+- **Pendientes de decidir:** nombre definitivo del producto/manifest; Sentry/PostHog;
+  Vitest; iconos PWA.
 
 ### Convenciones de código
 
@@ -227,38 +211,31 @@ anotarla aquí con fecha.
 
 ---
 
-## 7. Rutas (objetivo — todavía no existen)
+## 7. Rutas
 
-TanStack Router con **file-based routing**: los archivos de `src/routes/`
-generan `src/routeTree.gen.ts`.
+TanStack Router file-based en `src/routes/` → `routeTree.gen.ts` (generado).
 
-- **Pública:** `/login`. (El alta es por invitación del entrenador; **no** abrir
-  `/register` sin decidirlo — §6, pendientes.)
-- **Protegidas (rol `client`):**
-  - `/` — hoy: la sesión que toca, racha, acceso directo a entrenar.
-  - `/plan` — plan asignado, semanas y sesiones.
-  - `/sesion/$sesionId` — **el player**: ejecutar y registrar series. Es la
-    pantalla que justifica esta app (`DESIGN.md §9`).
-  - `/historial` — sesiones ya ejecutadas.
-  - `/perfil` — cuenta, tema, cerrar sesión.
+- **Públicas:** `/register`, `/login` (sin nav; redirigen a `/` si hay JWT).
+- **Protegidas (rol `client`, layout `_authenticated` + AppShell):**
+  - `/` — Hoy: sesión del día, racha, CTA al player.
+  - `/plan` — plan asignado (lectura); preview drawer móvil / split `md+`.
+  - `/sesion/$sesionId` — **player** inmersivo (sin nav). Prototipo hasta endpoint de series.
+  - `/historial` — log de sesiones; detalle drawer / split `md+`.
+  - `/progreso` — fotos antes/después. Prototipo hasta Storage en gateway.
+  - `/perfil` — identidad, tema, logout.
 
-Si una idea necesita una sexta ruta, revisar §1 antes de crearla.
+Nav de 5 items (C11): Hoy, Plan, Historial, Progreso, Perfil.
 
 ---
 
 ## 8. Hitos
 
-1. **Base** — limpiar el template (§5.1) y montar `main.tsx`: Query + Router +
-   tema. → *pendiente*
-2. **Auth** — `lib/gateway/` (fetch con token, refresh, errores) +
-   `AuthProvider` + `/login` + guard de rutas protegidas. → *pendiente*
-3. **Dominio** — `types/` + schemas Zod derivados del contrato del gateway. →
-   *pendiente*
-4. **Lectura** — `/` y `/plan` contra el gateway. → *pendiente*
-5. **Escritura** — `/sesion/$sesionId`: el player que **persiste series**. Es el
-   hito que hace que el producto exista. → *pendiente*
-6. **Cierre** — `/historial`, `/perfil`, iconos de PWA y manifest definitivo. →
-   *pendiente*
+1. **Base** — template limpio, providers, rutas, shell, marca. → *hecho*
+2. **Auth** — gateway client, AuthProvider, `/login`, `/register`, guards. → *hecho*
+3. **Dominio** — `types/` + Zod auth; mock para plan/sesiones. → *parcial*
+4. **Lectura** — `/` y `/plan` contra el gateway. → *pendiente* (UI con mock)
+5. **Escritura** — player que **persiste series** vía gateway. → *pendiente*
+6. **Cierre** — `/historial`, `/progreso`, `/perfil` reales; iconos PWA. → *parcial*
 
 Después del MVP: offline real (cola de sincronización), notificaciones,
 observabilidad, tests.
@@ -297,5 +274,6 @@ observabilidad, tests.
 - [vite.config.ts](./vite.config.ts) — router file-based, Tailwind, PWA, alias.
 - [components.json](./components.json) — config de shadcn (`base-nova`, neutral).
 - [tsconfig.app.json](./tsconfig.app.json) — reglas estrictas y `paths`.
+- [GATEWAY.md](./GATEWAY.md) — endpoints existentes y contrato pendiente.
 - [README.md](./README.md) — README del template de Vite; **no** documenta este
   producto (candidato a reescribir).

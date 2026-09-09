@@ -1,0 +1,6 @@
+export * from '@/lib/gateway/auth'
+export * from '@/lib/gateway/client'
+export * from '@/lib/gateway/errors'
+export * from '@/lib/gateway/fotos'
+export * from '@/lib/gateway/schemas'
+export * from '@/lib/gateway/series'
