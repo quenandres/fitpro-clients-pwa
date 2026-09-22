@@ -9,7 +9,7 @@ export type CategoriaComunidad =
 
 export type VisibilidadComunidad = 'publica' | 'privada'
 
-export type TipoPost = 'general' | 'logro' | 'pregunta'
+export type TipoPost = 'general' | 'logro' | 'pregunta' | 'anuncio'
 
 export type EstadoParticipacion = 'confirmado' | 'lista_espera' | 'ninguno'
 
@@ -42,6 +42,17 @@ export interface MiembroComunidad {
   nombre: string
   iniciales: string
   unidoEn: string
+  rol?: RolComunidad
+  suspendido?: boolean
+}
+
+export interface ComentarioComunidad {
+  id: string
+  postId: string
+  autorId: string
+  texto: string
+  creadoEn: string
+  autorNombre?: string
 }
 
 export interface PostComunidad {
@@ -56,6 +67,7 @@ export interface PostComunidad {
   liked?: boolean
   autorNombre?: string
   autorIniciales?: string
+  comentarios?: ComentarioComunidad[]
 }
 
 export interface ParticipanteEvento {

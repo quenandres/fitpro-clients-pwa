@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Users } from 'lucide-react'
+import { Lock, Users } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -10,20 +10,24 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { ETIQUETAS_CATEGORIA } from '@/lib/mock/comunidades'
+import { ETIQUETAS_CATEGORIA } from '@/lib/comunidades/display'
 import type { Comunidad } from '@/types/comunidad'
 
 type ComunidadCardProps = {
   comunidad: Comunidad
   esMiembro: boolean
+  joinPending?: boolean
   onUnirme?: () => void
 }
 
 export function ComunidadCard({
   comunidad,
   esMiembro,
+  joinPending = false,
   onUnirme,
 }: ComunidadCardProps) {
+  const esPrivada = comunidad.visibilidad === 'privada'
+
   return (
     <Card className="overflow-hidden">
       <div
@@ -45,8 +49,11 @@ export function ComunidadCard({
         <div className="min-w-0 flex-1 pb-1">
           <div className="flex flex-wrap items-center gap-2">
             <CardTitle className="truncate text-base">{comunidad.nombre}</CardTitle>
-            {comunidad.visibilidad === 'privada' && (
-              <Badge variant="secondary">Privada</Badge>
+            {esPrivada && (
+              <Badge variant="secondary" className="gap-1">
+                <Lock className="size-3" aria-hidden />
+                Privada
+              </Badge>
             )}
           </div>
           <CardDescription className="line-clamp-2">
@@ -73,9 +80,14 @@ export function ComunidadCard({
           >
             Ver
           </Link>
-          {!esMiembro && onUnirme && (
-            <Button size="sm" className="min-h-11" onClick={onUnirme}>
-              Unirme
+          {!esMiembro && !esPrivada && onUnirme && (
+            <Button
+              size="sm"
+              className="min-h-11"
+              disabled={joinPending}
+              onClick={onUnirme}
+            >
+              {joinPending ? 'Uniéndote…' : 'Unirme'}
             </Button>
           )}
         </div>

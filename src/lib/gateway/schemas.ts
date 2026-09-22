@@ -151,6 +151,17 @@ export const comunidadSchema = z.object({
 
 export type ComunidadGateway = z.infer<typeof comunidadSchema>
 
+export const comentarioComunidadSchema = z.object({
+  id: z.string(),
+  postId: z.string(),
+  autorId: z.string(),
+  texto: z.string(),
+  creadoEn: z.string(),
+  autorNombre: z.string().optional(),
+})
+
+export type ComentarioComunidadGateway = z.infer<typeof comentarioComunidadSchema>
+
 export const postComunidadSchema = z.object({
   id: z.string(),
   comunidadId: z.string(),
@@ -163,6 +174,7 @@ export const postComunidadSchema = z.object({
   liked: z.boolean().optional(),
   autorNombre: z.string().optional(),
   autorIniciales: z.string().optional(),
+  comentarios: z.array(comentarioComunidadSchema).optional(),
 })
 
 export type PostComunidadGateway = z.infer<typeof postComunidadSchema>

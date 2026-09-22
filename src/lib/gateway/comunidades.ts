@@ -9,6 +9,7 @@ import {
   type MiembroComunidadGateway,
   type PostComunidadGateway,
 } from '@/lib/gateway/schemas'
+import type { RolComunidad, TipoPost } from '@/types/comunidad'
 import { z } from 'zod'
 
 export type TabExplorar = 'para-ti' | 'mis' | 'descubrir'
@@ -56,7 +57,7 @@ export async function fetchPublicaciones(
 
 export async function createPublicacion(
   comunidadId: string,
-  body: { texto: string; tipo: 'general' | 'logro' | 'pregunta' },
+  body: { texto: string; tipo: TipoPost },
 ): Promise<PostComunidadGateway> {
   const data = await gatewayFetch<unknown>(
     `/api/comunidades/${comunidadId}/publicaciones`,
@@ -83,6 +84,46 @@ export async function toggleReaccion(
   return postComunidadSchema.parse(data)
 }
 
+export async function createComentario(
+  comunidadId: string,
+  postId: string,
+  texto: string,
+): Promise<PostComunidadGateway> {
+  const data = await gatewayFetch<unknown>(
+    `/api/comunidades/${comunidadId}/publicaciones/${postId}/comentarios`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ texto }),
+    },
+  )
+  return postComunidadSchema.parse(data)
+}
+
+export async function updatePublicacion(
+  comunidadId: string,
+  postId: string,
+  body: { fijado?: boolean },
+): Promise<PostComunidadGateway> {
+  const data = await gatewayFetch<unknown>(
+    `/api/comunidades/${comunidadId}/publicaciones/${postId}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    },
+  )
+  return postComunidadSchema.parse(data)
+}
+
+export async function deletePublicacion(
+  comunidadId: string,
+  postId: string,
+): Promise<void> {
+  await gatewayFetch<void>(
+    `/api/comunidades/${comunidadId}/publicaciones/${postId}`,
+    { method: 'DELETE' },
+  )
+}
+
 export async function fetchEventos(
   comunidadId: string,
   estado: 'proximos' | 'pasados' = 'proximos',
@@ -101,6 +142,37 @@ export async function fetchEvento(
     `/api/comunidades/${comunidadId}/eventos/${eventoId}`,
   )
   return eventoComunidadSchema.parse(data)
+}
+
+export async function createEvento(
+  comunidadId: string,
+  body: {
+    titulo: string
+    descripcion?: string
+    lugar?: string
+    inicioEn: string
+    finEn: string
+    cupoMax?: number | null
+  },
+): Promise<EventoComunidadGateway> {
+  const data = await gatewayFetch<unknown>(
+    `/api/comunidades/${comunidadId}/eventos`,
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    },
+  )
+  return eventoComunidadSchema.parse(data)
+}
+
+export async function deleteEvento(
+  comunidadId: string,
+  eventoId: string,
+): Promise<void> {
+  await gatewayFetch<void>(
+    `/api/comunidades/${comunidadId}/eventos/${eventoId}`,
+    { method: 'DELETE' },
+  )
 }
 
 export async function confirmarEvento(
@@ -132,4 +204,29 @@ export async function fetchMiembros(
     `/api/comunidades/${comunidadId}/miembros`,
   )
   return z.array(miembroComunidadSchema).parse(data)
+}
+
+export async function updateMiembro(
+  comunidadId: string,
+  userId: string,
+  body: { rol?: RolComunidad; suspendido?: boolean },
+): Promise<MiembroComunidadGateway> {
+  const data = await gatewayFetch<unknown>(
+    `/api/comunidades/${comunidadId}/miembros/${userId}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    },
+  )
+  return miembroComunidadSchema.parse(data)
+}
+
+export async function removeMiembro(
+  comunidadId: string,
+  userId: string,
+): Promise<void> {
+  await gatewayFetch<void>(
+    `/api/comunidades/${comunidadId}/miembros/${userId}`,
+    { method: 'DELETE' },
+  )
 }

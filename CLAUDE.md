@@ -4,7 +4,7 @@
 > para trabajar en este repo está aquí. Para **crear o modificar pantallas/UI**,
 > leer también **[DESIGN.md](./DESIGN.md)** antes de tocar `src/`.
 >
-> Última revisión: 2026-09-09
+> Última revisión: 2026-09-22
 
 ---
 
@@ -23,10 +23,9 @@ el historial, el perfil — está al servicio de eso.
 - **Fuera de alcance:** creación/edición de rutinas y planes, gestión de otras
   personas, calendario de terceros, comunidades, pagos, IA. Si una tarea pide
   eso, cuestionarla (§9.4).
-- **Estado hoy (2026-09-09):** **mapa de pantallas implementado**. Rutas, shell,
-  auth real contra gateway, player y pantallas con datos prototipo. Faltan
-  endpoints de dominio (series, plan, fotos) en `gym-gateway` — ver
-  [GATEWAY.md](./GATEWAY.md). Iconos PWA aún pendientes.
+- **Estado hoy (2026-09-22):** auth, plan, Hoy, player e historial hablan con
+  `gym-gateway` (`training.sessions` / `session_sets`). La IA de rutinas vive
+  en el gateway (no hay `gym-mcp`). Iconos PWA aún pendientes.
 
 ### Relación con los repos hermanos
 
@@ -56,7 +55,7 @@ hay que leer su documentación para trabajar aquí.
 | Iconos | `lucide-react` | — |
 | PWA | `vite-plugin-pwa` (`registerType: autoUpdate`, manifest `GYMApp`) — **faltan `public/pwa-192x192.png` y `pwa-512x512.png`** | Instalable; offline real después del MVP |
 | Compilador | **React Compiler** vía `babel-plugin-react-compiler` + `@rolldown/plugin-babel` | — |
-| Backend | **`../gym-gateway`** — cliente en `src/lib/gateway/` (auth operativo) | Endpoints de dominio pendientes — [GATEWAY.md](./GATEWAY.md) |
+| Backend | **`../gym-gateway`** — auth, plan, sesiones, comunidades, fotos. IA de rutinas también está ahí (antes `gym-mcp`) | [GATEWAY.md](./GATEWAY.md) |
 | Supabase directo | `@supabase/supabase-js` instalado pero **sin usar** (C1) | Todo por el gateway |
 | Validación runtime | **Zod** — schemas en `lib/gateway/schemas.ts` | Ampliar con contratos de dominio |
 | Tests | — (sin Vitest, sin `*.test.ts`) | Vitest + @testing-library/react |
@@ -141,9 +140,9 @@ agregar `VITE_SUPABASE_*` (C1).
 6. **Dominio en `src/types/dominio.ts`.** Tipos derivados del contrato del
    gateway; hoy Hoy/Plan/Historial usan mock en `lib/mock/`. Reglas: **`ejercicio_id`**
    nunca nombre como clave; Zod en respuestas del gateway (C4).
-7. **Player y Progreso son prototipo.** No hay endpoint de series ni Storage de
-   fotos en `gym-gateway`. Ver [GATEWAY.md](./GATEWAY.md). No prometer guardado
-   real hasta que existan.
+7. **Player persiste series reales.** `/api/sesiones/*/iniciar|series|completar`
+   escribe `training.sessions` / `session_sets`. Progreso de fotos ya va por
+   `/api/progreso/fotos`. El panel de stats de Hoy sigue con `progresoHoyMock`.
 8. **shadcn/ui: agregar, no reescribir.** Los componentes de
    `src/components/ui/` los genera el CLI (`npx shadcn@latest add`). No
    escribirlos a mano; editarlos solo para adaptarlos a tokens de marca, y
@@ -192,11 +191,11 @@ anotarla aquí con fecha.
 - **C12 — Entrenador también entra como cliente (2026-09-20).** La PWA admite
   `client`, `admin`, `superadmin` y `trainer`. Un entrenador puede usar su
   propio plan/rutinas. Solo se bloquea `gym`. No abre pantallas de gestión.
-- **C13 — Comunidades + nav de 6 items (2026-09-15).** Sexto ítem **Comunidades**
-  (`Users`) → `/comunidades`. Núcleo persistido vía `gym-gateway` (`/api/comunidades/*`,
-  TanStack Query en `lib/gateway/comunidades-hooks.ts`). Explorar, unirse/salir,
-  publicar, likes y RSVP a eventos. El store mock (`comunidades-store.ts`) queda
-  obsoleto para lectura; no usarlo en rutas nuevas.
+- **C13 — Comunidades + nav de 6 items (2026-09-15, paridad gateway 2026-09-22).**
+  Sexto ítem **Comunidades** (`Users`) → `/comunidades`. Datos vía `gym-gateway`
+  (`/api/comunidades/*`, TanStack Query en `lib/gateway/comunidades-hooks.ts`):
+  explorar, unirse/salir, publicaciones, comentarios, likes, eventos con RSVP,
+  miembros y moderación según `miRol`. Sin store mock.
 - **C14 — Recuperar acceso con código, no magic link (2026-09-22).**
   `/recuperar` pide un OTP de 6 dígitos vía `POST /api/auth/recover` y
   `POST /api/auth/reset-password`. El enlace de Supabase (`otp_expired` en el
@@ -234,14 +233,15 @@ TanStack Router file-based en `src/routes/` → `routeTree.gen.ts` (generado).
   - `/` — Hoy: sesión del día, racha, CTA al detalle de sesión.
   - `/plan` — plan asignado (lectura); preview drawer móvil / split `md+`.
   - `/sesion/$sesionId/detalle` — lista de ejercicios de la sesión (con nav).
-  - `/sesion/$sesionId` — **player** inmersivo (sin nav). Prototipo hasta endpoint de series.
+  - `/sesion/$sesionId` — **player** inmersivo (sin nav). Escribe series en `gym-gateway`.
   - `/historial` — log de sesiones; detalle drawer / split `md+`.
   - `/progreso` — fotos antes/después. Prototipo hasta Storage en gateway.
-  - `/comunidades` — explorar comunidades (tabs, búsqueda, Unirme). Prototipo mock.
+  - `/comunidades` — explorar comunidades (tabs, búsqueda, Unirme).
   - `/comunidades/$comunidadId` — inicio de comunidad (Unirme/Salir, resumen).
-  - `/comunidades/$comunidadId/publicaciones` — feed + publicar (miembros).
-  - `/comunidades/$comunidadId/eventos` — próximos/pasados + RSVP.
+  - `/comunidades/$comunidadId/publicaciones` — feed + publicar + comentarios.
+  - `/comunidades/$comunidadId/eventos` — próximos/pasados + RSVP + crear (moderador).
   - `/comunidades/$comunidadId/eventos/$eventoId` — detalle de evento + RSVP.
+  - `/comunidades/$comunidadId/miembros` — listado; moderación si `miRol` lo permite.
   - `/perfil` — identidad, tema, logout.
 
 Nav de 6 items (C13): Hoy, Plan, Historial, Progreso, Comunidades, Perfil.
@@ -253,8 +253,8 @@ Nav de 6 items (C13): Hoy, Plan, Historial, Progreso, Comunidades, Perfil.
 1. **Base** — template limpio, providers, rutas, shell, marca. → *hecho*
 2. **Auth** — gateway client, AuthProvider, `/login`, `/register`, `/recuperar`, guards. → *hecho*
 3. **Dominio** — `types/` + Zod auth; mock para plan/sesiones. → *parcial*
-4. **Lectura** — `/` y `/plan` contra el gateway. → *pendiente* (UI con mock)
-5. **Escritura** — player que **persiste series** vía gateway. → *pendiente*
+4. **Lectura** — `/` y `/plan` contra el gateway. → *hecho*
+5. **Escritura** — player que **persiste series** vía gateway. → *hecho*
 6. **Cierre** — `/historial`, `/progreso`, `/perfil` reales; iconos PWA. → *parcial*
 
 Después del MVP: offline real (cola de sincronización), notificaciones,

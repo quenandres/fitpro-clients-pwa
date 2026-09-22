@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { CalendarDays, MapPin, Users } from 'lucide-react'
+import { CalendarDays, MapPin, Trash2, Users } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -10,16 +10,19 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import type { EventoComunidad } from '@/types/comunidad'
-import type { EstadoParticipacion } from '@/types/comunidad'
+import type { EventoComunidad, EstadoParticipacion } from '@/types/comunidad'
 
 type EventoCardProps = {
   evento: EventoComunidad
   comunidadId: string
   estadoParticipacion: EstadoParticipacion
   esMiembro: boolean
+  suspendido?: boolean
+  puedeModerar?: boolean
+  confirmarPending?: boolean
   onConfirmar?: () => void
   onCancelar?: () => void
+  onEliminar?: () => void
   pasado?: boolean
 }
 
@@ -47,26 +50,33 @@ export function EventoCard({
   comunidadId,
   estadoParticipacion,
   esMiembro,
+  suspendido = false,
+  puedeModerar = false,
+  confirmarPending = false,
   onConfirmar,
   onCancelar,
+  onEliminar,
   pasado = false,
 }: EventoCardProps) {
   const confirmados = evento.participantes.filter(
     (p) => p.estado === 'confirmado',
   ).length
+  const puedeParticipar = esMiembro && !suspendido
 
   return (
     <Card>
       <CardHeader>
         <div className="flex flex-wrap items-start justify-between gap-2">
           <CardTitle className="text-lg">{evento.titulo}</CardTitle>
-          {pasado && <Badge variant="secondary">Finalizado</Badge>}
-          {!pasado && estadoParticipacion === 'confirmado' && (
-            <Badge>Confirmado</Badge>
-          )}
-          {!pasado && estadoParticipacion === 'lista_espera' && (
-            <Badge variant="outline">Lista de espera</Badge>
-          )}
+          <div className="flex flex-wrap gap-1">
+            {pasado && <Badge variant="secondary">Finalizado</Badge>}
+            {!pasado && estadoParticipacion === 'confirmado' && (
+              <Badge>Confirmado</Badge>
+            )}
+            {!pasado && estadoParticipacion === 'lista_espera' && (
+              <Badge variant="outline">Lista de espera</Badge>
+            )}
+          </div>
         </div>
         <CardDescription>{evento.descripcion}</CardDescription>
       </CardHeader>
@@ -98,12 +108,20 @@ export function EventoCard({
           >
             Ver detalle
           </Link>
-          {esMiembro && !pasado && estadoParticipacion === 'ninguno' && onConfirmar && (
-            <Button size="sm" className="min-h-11" onClick={onConfirmar}>
-              Confirmar participación
-            </Button>
-          )}
-          {esMiembro &&
+          {puedeParticipar &&
+            !pasado &&
+            estadoParticipacion === 'ninguno' &&
+            onConfirmar && (
+              <Button
+                size="sm"
+                className="min-h-11"
+                disabled={confirmarPending}
+                onClick={onConfirmar}
+              >
+                {confirmarPending ? 'Confirmando…' : 'Confirmar participación'}
+              </Button>
+            )}
+          {puedeParticipar &&
             !pasado &&
             estadoParticipacion !== 'ninguno' &&
             onCancelar && (
@@ -111,11 +129,23 @@ export function EventoCard({
                 variant="outline"
                 size="sm"
                 className="min-h-11"
+                disabled={confirmarPending}
                 onClick={onCancelar}
               >
                 Cancelar
               </Button>
             )}
+          {puedeModerar && onEliminar && (
+            <Button
+              variant="destructive"
+              size="sm"
+              className="min-h-11 gap-1"
+              onClick={onEliminar}
+            >
+              <Trash2 className="size-4" aria-hidden />
+              Eliminar
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

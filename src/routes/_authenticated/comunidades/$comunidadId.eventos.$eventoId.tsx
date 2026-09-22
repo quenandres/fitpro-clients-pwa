@@ -17,6 +17,7 @@ import {
   useConfirmarEvento,
   useCancelarEvento,
 } from '@/lib/gateway/comunidades-hooks'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute(
   '/_authenticated/comunidades/$comunidadId/eventos/$eventoId',
@@ -48,6 +49,8 @@ function EventoDetallePage() {
     (p) => p.estado === 'confirmado',
   ).length
   const esMiembro = comunidad.esMiembro ?? false
+  const suspendido = comunidad.suspendido ?? false
+  const puedeParticipar = esMiembro && !suspendido
 
   const inicio = new Date(evento.inicioEn)
   const fin = new Date(evento.finEn)
@@ -108,27 +111,45 @@ function EventoDetallePage() {
         </CardContent>
       </Card>
 
-      {esMiembro && !pasado && (
+      {puedeParticipar && !pasado && (
         <div className="flex flex-wrap gap-2">
           {estado === 'ninguno' ? (
             <Button
               className="min-h-11 w-full sm:w-auto"
               disabled={confirmar.isPending}
-              onClick={() => confirmar.mutate(eventoId)}
+              onClick={() =>
+                confirmar.mutate(eventoId, {
+                  onSuccess: () => toast.success('Participación confirmada'),
+                  onError: () =>
+                    toast.error('No pudimos confirmar tu participación.'),
+                })
+              }
             >
-              Confirmar participación
+              {confirmar.isPending ? 'Confirmando…' : 'Confirmar participación'}
             </Button>
           ) : (
             <Button
               variant="outline"
               className="min-h-11 w-full sm:w-auto"
               disabled={cancelar.isPending}
-              onClick={() => cancelar.mutate(eventoId)}
+              onClick={() =>
+                cancelar.mutate(eventoId, {
+                  onSuccess: () => toast.success('Participación cancelada'),
+                  onError: () =>
+                    toast.error('No pudimos cancelar tu participación.'),
+                })
+              }
             >
-              Cancelar participación
+              {cancelar.isPending ? 'Cancelando…' : 'Cancelar participación'}
             </Button>
           )}
         </div>
+      )}
+
+      {suspendido && esMiembro && !pasado && (
+        <p className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          Tu cuenta está suspendida. No puedes confirmar asistencia a eventos.
+        </p>
       )}
 
       {!esMiembro && !pasado && (

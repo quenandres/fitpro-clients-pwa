@@ -9,6 +9,7 @@ import {
   useJoinComunidad,
 } from '@/lib/gateway/comunidades-hooks'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_authenticated/comunidades/')({
   component: ComunidadesExplorarPage,
@@ -30,6 +31,7 @@ function ComunidadesExplorarPage() {
     busqueda,
   )
   const joinMutation = useJoinComunidad()
+  const [joinPendingId, setJoinPendingId] = useState<string | null>(null)
 
   const filtradas = useMemo(() => comunidades, [comunidades])
 
@@ -109,7 +111,17 @@ function ComunidadesExplorarPage() {
               <ComunidadCard
                 comunidad={comunidad}
                 esMiembro={comunidad.esMiembro ?? false}
-                onUnirme={() => joinMutation.mutate(comunidad.id)}
+                joinPending={joinPendingId === comunidad.id}
+                onUnirme={() => {
+                  setJoinPendingId(comunidad.id)
+                  joinMutation.mutate(comunidad.id, {
+                    onSettled: () => setJoinPendingId(null),
+                    onSuccess: () =>
+                      toast.success(`Te uniste a ${comunidad.nombre}`),
+                    onError: () =>
+                      toast.error('No pudimos unirte. Inténtalo de nuevo.'),
+                  })
+                }}
               />
             </li>
           ))}

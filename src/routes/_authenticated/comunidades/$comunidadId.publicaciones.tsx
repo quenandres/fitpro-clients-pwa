@@ -14,14 +14,21 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import {
+  puedeModerarComunidad,
+} from '@/lib/comunidades/display'
+import {
   useComunidad,
   useComunidadPosts,
+  useCreateComentario,
   useCreatePublicacion,
+  useDeletePublicacion,
   useToggleLike,
+  useUpdatePublicacion,
 } from '@/lib/gateway/comunidades-hooks'
 import { useAuth } from '@/providers/auth-provider'
 import type { TipoPost } from '@/types/comunidad'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute(
   '/_authenticated/comunidades/$comunidadId/publicaciones',
@@ -39,10 +46,18 @@ function ComunidadPublicacionesPage() {
   const { comunidadId } = Route.useParams()
   const { user } = useAuth()
   const { data: comunidad } = useComunidad(comunidadId)
-  const { data: postsRaw = [], isLoading } = useComunidadPosts(comunidadId)
+  const { data: postsRaw = [], isLoading, isError, refetch } =
+    useComunidadPosts(comunidadId)
   const createPost = useCreatePublicacion(comunidadId)
   const toggleLike = useToggleLike(comunidadId)
+  const createComentario = useCreateComentario(comunidadId)
+  const updatePublicacion = useUpdatePublicacion(comunidadId)
+  const deletePublicacion = useDeletePublicacion(comunidadId)
+
   const esMiembro = comunidad?.esMiembro ?? false
+  const suspendido = comunidad?.suspendido ?? false
+  const puedeModerar = puedeModerarComunidad(comunidad?.miRol)
+  const puedeParticipar = esMiembro && !suspendido
 
   const posts = useMemo(
     () =>
@@ -57,6 +72,10 @@ function ComunidadPublicacionesPage() {
   const [sheetAbierto, setSheetAbierto] = useState(false)
   const [texto, setTexto] = useState('')
   const [tipo, setTipo] = useState<TipoPost>('general')
+  const [likePendingId, setLikePendingId] = useState<string | null>(null)
+  const [comentarioPendingId, setComentarioPendingId] = useState<string | null>(
+    null,
+  )
 
   function publicar() {
     const limpio = texto.trim()
@@ -68,7 +87,10 @@ function ComunidadPublicacionesPage() {
           setTexto('')
           setTipo('general')
           setSheetAbierto(false)
+          toast.success('Publicación creada')
         },
+        onError: () =>
+          toast.error('No pudimos publicar. Inténtalo de nuevo.'),
       },
     )
   }
@@ -77,11 +99,22 @@ function ComunidadPublicacionesPage() {
     return <Skeleton className="h-48 rounded-xl" />
   }
 
+  if (isError) {
+    return (
+      <p className="rounded-xl border border-destructive/30 px-4 py-8 text-center text-sm text-destructive">
+        No pudimos cargar las publicaciones.{' '}
+        <button type="button" className="underline" onClick={() => void refetch()}>
+          Reintentar
+        </button>
+      </p>
+    )
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold">Publicaciones</h2>
-        {esMiembro && (
+        {puedeParticipar && (
           <Button
             className="min-h-11 gap-2"
             onClick={() => setSheetAbierto(true)}
@@ -95,6 +128,12 @@ function ComunidadPublicacionesPage() {
       {!esMiembro && (
         <p className="rounded-xl border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
           Únete a la comunidad para publicar en el feed.
+        </p>
+      )}
+
+      {suspendido && esMiembro && (
+        <p className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          Tu cuenta está suspendida. No puedes publicar ni comentar.
         </p>
       )}
 
@@ -112,7 +151,63 @@ function ComunidadPublicacionesPage() {
               autorIniciales={post.autorIniciales ?? '?'}
               liked={post.liked ?? false}
               esPropio={post.autorId === user?.id}
-              onToggleLike={() => toggleLike.mutate(post.id)}
+              miRol={comunidad?.miRol}
+              suspendido={suspendido}
+              esMiembro={esMiembro}
+              likePending={likePendingId === post.id}
+              comentarioPending={comentarioPendingId === post.id}
+              onToggleLike={() => {
+                setLikePendingId(post.id)
+                toggleLike.mutate(post.id, {
+                  onSettled: () => setLikePendingId(null),
+                  onError: () =>
+                    toast.error('No pudimos registrar tu reacción.'),
+                })
+              }}
+              onComentar={
+                puedeParticipar
+                  ? (textoComentario) => {
+                      setComentarioPendingId(post.id)
+                      createComentario.mutate(
+                        { postId: post.id, texto: textoComentario },
+                        {
+                          onSettled: () => setComentarioPendingId(null),
+                          onSuccess: () => toast.success('Comentario publicado'),
+                          onError: () =>
+                            toast.error('No pudimos publicar el comentario.'),
+                        },
+                      )
+                    }
+                  : undefined
+              }
+              onFijar={
+                puedeModerar
+                  ? () =>
+                      updatePublicacion.mutate(
+                        { postId: post.id, fijado: !post.fijado },
+                        {
+                          onSuccess: () =>
+                            toast.success(
+                              post.fijado
+                                ? 'Publicación desfijada'
+                                : 'Publicación fijada',
+                            ),
+                          onError: () =>
+                            toast.error('No pudimos actualizar la publicación.'),
+                        },
+                      )
+                  : undefined
+              }
+              onEliminar={
+                puedeModerar || post.autorId === user?.id
+                  ? () =>
+                      deletePublicacion.mutate(post.id, {
+                        onSuccess: () => toast.success('Publicación eliminada'),
+                        onError: () =>
+                          toast.error('No pudimos eliminar la publicación.'),
+                      })
+                  : undefined
+              }
             />
           ))}
         </div>
@@ -153,6 +248,20 @@ function ComunidadPublicacionesPage() {
                   </button>
                 ))}
               </div>
+              {puedeModerar && (
+                <button
+                  type="button"
+                  className={cn(
+                    'mt-2 min-h-11 w-full rounded-full text-xs font-semibold transition-colors',
+                    tipo === 'anuncio'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground',
+                  )}
+                  onClick={() => setTipo('anuncio')}
+                >
+                  Anuncio (moderador)
+                </button>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -181,7 +290,7 @@ function ComunidadPublicacionesPage() {
               disabled={!texto.trim() || createPost.isPending}
               onClick={publicar}
             >
-              Publicar
+              {createPost.isPending ? 'Publicando…' : 'Publicar'}
             </Button>
           </SheetFooter>
         </SheetContent>

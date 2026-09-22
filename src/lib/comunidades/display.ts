@@ -1,4 +1,9 @@
-import type { CategoriaComunidad, Comunidad } from '@/types/comunidad'
+import type {
+  CategoriaComunidad,
+  Comunidad,
+  RolComunidad,
+  TipoPost,
+} from '@/types/comunidad'
 import type { ComunidadGateway } from '@/lib/gateway/schemas'
 
 const COLORES_CATEGORIA: Record<
@@ -19,6 +24,31 @@ function inicialesDe(nombre: string): string {
   if (parts.length === 0) return '?'
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
+export const ETIQUETAS_CATEGORIA: Record<CategoriaComunidad, string> = {
+  crossfit: 'CrossFit',
+  running: 'Running',
+  fuerza: 'Fuerza',
+  yoga: 'Yoga',
+  nutricion: 'Nutrición',
+  ciclismo: 'Ciclismo',
+  calistenia: 'Calistenia',
+}
+
+export const ETIQUETAS_TIPO_POST: Record<TipoPost, string> = {
+  general: 'General',
+  logro: 'Logro',
+  pregunta: 'Pregunta',
+  anuncio: 'Anuncio',
+}
+
+export function puedeModerarComunidad(miRol?: RolComunidad | null): boolean {
+  return miRol === 'moderator' || miRol === 'leader'
+}
+
+export function puedeAdministrarComunidad(miRol?: RolComunidad | null): boolean {
+  return miRol === 'leader'
 }
 
 export function mapComunidadGateway(raw: ComunidadGateway): Comunidad {

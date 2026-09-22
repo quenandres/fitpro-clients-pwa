@@ -7,6 +7,7 @@ import {
   useJoinComunidad,
   useLeaveComunidad,
 } from '@/lib/gateway/comunidades-hooks'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_authenticated/comunidades/$comunidadId')({
   component: ComunidadLayout,
@@ -36,8 +37,27 @@ function ComunidadLayout() {
       <ComunidadHeader
         comunidad={comunidad}
         esMiembro={comunidad.esMiembro ?? false}
-        onUnirme={() => joinMutation.mutate(comunidadId)}
-        onSalir={() => leaveMutation.mutate(comunidadId)}
+        joinPending={joinMutation.isPending}
+        leavePending={leaveMutation.isPending}
+        onUnirme={() =>
+          joinMutation.mutate(comunidadId, {
+            onSuccess: () =>
+              toast.success(`Te uniste a ${comunidad.nombre}`),
+            onError: () =>
+              toast.error(
+                comunidad.visibilidad === 'privada'
+                  ? 'Esta comunidad es privada. Necesitas una invitación.'
+                  : 'No pudimos unirte. Inténtalo de nuevo.',
+              ),
+          })
+        }
+        onSalir={() =>
+          leaveMutation.mutate(comunidadId, {
+            onSuccess: () => toast.success(`Saliste de ${comunidad.nombre}`),
+            onError: () =>
+              toast.error('No pudimos procesar la salida. Inténtalo de nuevo.'),
+          })
+        }
       />
 
       <ComunidadTabsNav comunidadId={comunidadId} />

@@ -24,6 +24,7 @@ import { Route as AuthenticatedHistorialSesionIdRouteImport } from './routes/_au
 import { Route as AuthenticatedSesionSesionIdRouteImport } from './routes/_authenticated/sesion.$sesionId'
 import { Route as AuthenticatedComunidadesComunidadIdIndexRouteImport } from './routes/_authenticated/comunidades/$comunidadId.index'
 import { Route as AuthenticatedComunidadesComunidadIdEventosRouteImport } from './routes/_authenticated/comunidades/$comunidadId.eventos'
+import { Route as AuthenticatedComunidadesComunidadIdMiembrosRouteImport } from './routes/_authenticated/comunidades/$comunidadId.miembros'
 import { Route as AuthenticatedComunidadesComunidadIdPublicacionesRouteImport } from './routes/_authenticated/comunidades/$comunidadId.publicaciones'
 import { Route as AuthenticatedSesionSesionIdIndexRouteImport } from './routes/_authenticated/sesion.$sesionId.index'
 import { Route as AuthenticatedSesionSesionIdDetalleRouteImport } from './routes/_authenticated/sesion.$sesionId.detalle'
@@ -109,6 +110,12 @@ const AuthenticatedComunidadesComunidadIdEventosRoute =
     path: '/eventos',
     getParentRoute: () => AuthenticatedComunidadesComunidadIdRoute,
   } as any)
+const AuthenticatedComunidadesComunidadIdMiembrosRoute =
+  AuthenticatedComunidadesComunidadIdMiembrosRouteImport.update({
+    id: '/miembros',
+    path: '/miembros',
+    getParentRoute: () => AuthenticatedComunidadesComunidadIdRoute,
+  } as any)
 const AuthenticatedComunidadesComunidadIdPublicacionesRoute =
   AuthenticatedComunidadesComunidadIdPublicacionesRouteImport.update({
     id: '/publicaciones',
@@ -148,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/sesion/$sesionId': typeof AuthenticatedSesionSesionIdRouteWithChildren
   '/comunidades/': typeof AuthenticatedComunidadesIndexRoute
   '/comunidades/$comunidadId/eventos': typeof AuthenticatedComunidadesComunidadIdEventosRouteWithChildren
+  '/comunidades/$comunidadId/miembros': typeof AuthenticatedComunidadesComunidadIdMiembrosRoute
   '/comunidades/$comunidadId/publicaciones': typeof AuthenticatedComunidadesComunidadIdPublicacionesRoute
   '/sesion/$sesionId/detalle': typeof AuthenticatedSesionSesionIdDetalleRoute
   '/comunidades/$comunidadId/': typeof AuthenticatedComunidadesComunidadIdIndexRoute
@@ -166,6 +174,7 @@ export interface FileRoutesByTo {
   '/historial/$sesionId': typeof AuthenticatedHistorialSesionIdRoute
   '/comunidades': typeof AuthenticatedComunidadesIndexRoute
   '/comunidades/$comunidadId/eventos': typeof AuthenticatedComunidadesComunidadIdEventosRouteWithChildren
+  '/comunidades/$comunidadId/miembros': typeof AuthenticatedComunidadesComunidadIdMiembrosRoute
   '/comunidades/$comunidadId/publicaciones': typeof AuthenticatedComunidadesComunidadIdPublicacionesRoute
   '/sesion/$sesionId/detalle': typeof AuthenticatedSesionSesionIdDetalleRoute
   '/comunidades/$comunidadId': typeof AuthenticatedComunidadesComunidadIdIndexRoute
@@ -188,6 +197,7 @@ export interface FileRoutesById {
   '/_authenticated/sesion/$sesionId': typeof AuthenticatedSesionSesionIdRouteWithChildren
   '/_authenticated/comunidades/': typeof AuthenticatedComunidadesIndexRoute
   '/_authenticated/comunidades/$comunidadId/eventos': typeof AuthenticatedComunidadesComunidadIdEventosRouteWithChildren
+  '/_authenticated/comunidades/$comunidadId/miembros': typeof AuthenticatedComunidadesComunidadIdMiembrosRoute
   '/_authenticated/comunidades/$comunidadId/publicaciones': typeof AuthenticatedComunidadesComunidadIdPublicacionesRoute
   '/_authenticated/sesion/$sesionId/detalle': typeof AuthenticatedSesionSesionIdDetalleRoute
   '/_authenticated/comunidades/$comunidadId/': typeof AuthenticatedComunidadesComunidadIdIndexRoute
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/sesion/$sesionId'
     | '/comunidades/'
     | '/comunidades/$comunidadId/eventos'
+    | '/comunidades/$comunidadId/miembros'
     | '/comunidades/$comunidadId/publicaciones'
     | '/sesion/$sesionId/detalle'
     | '/comunidades/$comunidadId/'
@@ -228,6 +239,7 @@ export interface FileRouteTypes {
     | '/historial/$sesionId'
     | '/comunidades'
     | '/comunidades/$comunidadId/eventos'
+    | '/comunidades/$comunidadId/miembros'
     | '/comunidades/$comunidadId/publicaciones'
     | '/sesion/$sesionId/detalle'
     | '/comunidades/$comunidadId'
@@ -249,6 +261,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sesion/$sesionId'
     | '/_authenticated/comunidades/'
     | '/_authenticated/comunidades/$comunidadId/eventos'
+    | '/_authenticated/comunidades/$comunidadId/miembros'
     | '/_authenticated/comunidades/$comunidadId/publicaciones'
     | '/_authenticated/sesion/$sesionId/detalle'
     | '/_authenticated/comunidades/$comunidadId/'
@@ -370,6 +383,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedComunidadesComunidadIdEventosRouteImport
       parentRoute: typeof AuthenticatedComunidadesComunidadIdRoute
     }
+    '/_authenticated/comunidades/$comunidadId/miembros': {
+      id: '/_authenticated/comunidades/$comunidadId/miembros'
+      path: '/miembros'
+      fullPath: '/comunidades/$comunidadId/miembros'
+      preLoaderRoute: typeof AuthenticatedComunidadesComunidadIdMiembrosRouteImport
+      parentRoute: typeof AuthenticatedComunidadesComunidadIdRoute
+    }
     '/_authenticated/comunidades/$comunidadId/publicaciones': {
       id: '/_authenticated/comunidades/$comunidadId/publicaciones'
       path: '/publicaciones'
@@ -432,6 +452,7 @@ const AuthenticatedComunidadesComunidadIdEventosRouteWithChildren =
 
 interface AuthenticatedComunidadesComunidadIdRouteChildren {
   AuthenticatedComunidadesComunidadIdEventosRoute: typeof AuthenticatedComunidadesComunidadIdEventosRouteWithChildren
+  AuthenticatedComunidadesComunidadIdMiembrosRoute: typeof AuthenticatedComunidadesComunidadIdMiembrosRoute
   AuthenticatedComunidadesComunidadIdPublicacionesRoute: typeof AuthenticatedComunidadesComunidadIdPublicacionesRoute
   AuthenticatedComunidadesComunidadIdIndexRoute: typeof AuthenticatedComunidadesComunidadIdIndexRoute
 }
@@ -440,6 +461,8 @@ const AuthenticatedComunidadesComunidadIdRouteChildren: AuthenticatedComunidades
   {
     AuthenticatedComunidadesComunidadIdEventosRoute:
       AuthenticatedComunidadesComunidadIdEventosRouteWithChildren,
+    AuthenticatedComunidadesComunidadIdMiembrosRoute:
+      AuthenticatedComunidadesComunidadIdMiembrosRoute,
     AuthenticatedComunidadesComunidadIdPublicacionesRoute:
       AuthenticatedComunidadesComunidadIdPublicacionesRoute,
     AuthenticatedComunidadesComunidadIdIndexRoute:
