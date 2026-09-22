@@ -5,19 +5,36 @@ import {
   Home,
   Images,
   User,
+  Users,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Hoy', icon: Home },
-  { to: '/plan', label: 'Plan', icon: CalendarDays },
-  { to: '/historial', label: 'Historial', icon: History },
-  { to: '/progreso', label: 'Progreso', icon: Images },
-  { to: '/perfil', label: 'Perfil', icon: User },
+  { to: '/', label: 'Hoy', shortLabel: 'Hoy', icon: Home },
+  { to: '/plan', label: 'Plan', shortLabel: 'Plan', icon: CalendarDays },
+  {
+    to: '/historial',
+    label: 'Seguimiento',
+    shortLabel: 'Seg.',
+    icon: History,
+  },
+  { to: '/progreso', label: 'Progreso', shortLabel: 'Fotos', icon: Images },
+  {
+    to: '/comunidades',
+    label: 'Comunidades',
+    shortLabel: 'Grupos',
+    icon: Users,
+  },
+  { to: '/perfil', label: 'Perfil', shortLabel: 'Perfil', icon: User },
 ] as const
 
+function navActiva(pathname: string, to: string) {
+  if (to === '/') return pathname === '/'
+  return pathname === to || pathname.startsWith(`${to}/`)
+}
+
 const ROUTES_SIN_NAV = ['/login', '/register']
-const ROUTES_PLAYER = /^\/sesion\//
+const ROUTES_PLAYER = /^\/sesion\/[^/]+\/?$/
 
 type AppShellProps = {
   children: React.ReactNode
@@ -73,7 +90,7 @@ export function AppShell({ children, hideNav = false }: AppShellProps) {
                 to={to}
                 label={label}
                 icon={icon}
-                active={pathname === to}
+                active={navActiva(pathname, to)}
                 className="min-h-11 flex-row gap-2 px-4 text-sm"
               />
             ))}
@@ -97,13 +114,13 @@ export function AppShell({ children, hideNav = false }: AppShellProps) {
           aria-label="Navegación principal"
         >
           <div className="mx-auto flex max-w-6xl items-stretch justify-around px-2 py-1">
-            {NAV_ITEMS.map(({ to, label, icon }) => (
+            {NAV_ITEMS.map(({ to, label, shortLabel, icon }) => (
               <NavLink
                 key={to}
                 to={to}
-                label={label}
+                label={shortLabel ?? label}
                 icon={icon}
-                active={pathname === to}
+                active={navActiva(pathname, to)}
               />
             ))}
           </div>

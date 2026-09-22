@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Camera, ImagePlus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -23,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { PrototypeBanner } from '@/components/PrototypeBanner'
+import { eliminarFoto, listarFotos, subirFoto } from '@/lib/gateway/fotos'
 import { cn } from '@/lib/utils'
 import type { FotoProgreso } from '@/types/dominio'
 
@@ -32,7 +33,11 @@ export const Route = createFileRoute('/_authenticated/progreso')({
 })
 
 function ProgresoPage() {
-  const [fotos, setFotos] = useState<FotoProgreso[]>([])
+  const queryClient = useQueryClient()
+  const { data: fotos = [] } = useQuery({
+    queryKey: ['progreso-fotos'],
+    queryFn: listarFotos,
+  })
   const [antesId, setAntesId] = useState<string | null>(null)
   const [despuesId, setDespuesId] = useState<string | null>(null)
   const [sheetAbierto, setSheetAbierto] = useState(false)
@@ -43,23 +48,17 @@ function ProgresoPage() {
   const fotoAntes = fotos.find((f) => f.id === antesId)
   const fotoDespues = fotos.find((f) => f.id === despuesId)
 
-  async function simularSubida(file: File) {
+  async function subirArchivo(file: File) {
     setSubiendo(true)
     setError(null)
     try {
-      // Prototipo: no hay endpoint en gateway (C1, C9)
-      await new Promise((r) => setTimeout(r, 800))
-      const nueva: FotoProgreso = {
-        id: crypto.randomUUID(),
-        creada_en: new Date().toISOString(),
-        url: URL.createObjectURL(file),
-      }
-      setFotos((prev) => [nueva, ...prev])
+      const nueva = await subirFoto(file)
+      await queryClient.invalidateQueries({ queryKey: ['progreso-fotos'] })
       if (!antesId) setAntesId(nueva.id)
       else if (!despuesId) setDespuesId(nueva.id)
       setSheetAbierto(false)
     } catch {
-      setError('No se pudo subir la foto. El backend de fotos aún no existe.')
+      setError('No se pudo subir la foto.')
     } finally {
       setSubiendo(false)
     }
@@ -67,13 +66,14 @@ function ProgresoPage() {
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (file) void simularSubida(file)
+    if (file) void subirArchivo(file)
     e.target.value = ''
   }
 
-  function confirmarBorrado() {
+  async function confirmarBorrado() {
     if (!borrarId) return
-    setFotos((prev) => prev.filter((f) => f.id !== borrarId))
+    await eliminarFoto(borrarId)
+    await queryClient.invalidateQueries({ queryKey: ['progreso-fotos'] })
     if (antesId === borrarId) setAntesId(null)
     if (despuesId === borrarId) setDespuesId(null)
     setBorrarId(null)
@@ -86,7 +86,6 @@ function ProgresoPage() {
         <p className="text-muted-foreground">Compara tu evolución con fotos</p>
       </header>
 
-      <PrototypeBanner mensaje="Prototipo: las fotos se guardan solo en memoria local de esta sesión. El gateway aún no tiene Storage ni API de progreso." />
 
       {error && (
         <p className="text-sm text-destructive" role="alert">

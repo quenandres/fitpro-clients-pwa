@@ -36,7 +36,12 @@ export async function signup(
   const data = await gatewayFetch<Record<string, unknown>>('/api/auth/signup', {
     method: 'POST',
     auth: false,
-    body: JSON.stringify({ email: body.email, password: body.password }),
+    body: JSON.stringify({
+      email: body.email,
+      password: body.password,
+      app: 'client',
+      full_name: body.nombre ?? '',
+    }),
   })
 
   const hasTokens =
@@ -63,6 +68,20 @@ export async function logout(): Promise<void> {
 export async function getUser(): Promise<UsuarioGateway> {
   const data = await gatewayFetch<unknown>('/api/auth/user')
   return usuarioSchema.parse(data)
+}
+
+export async function acceptInvite(
+  tokenHash: string,
+  type: string,
+): Promise<AuthTokens> {
+  const data = await gatewayFetch<unknown>('/api/auth/accept-invite', {
+    method: 'POST',
+    auth: false,
+    body: JSON.stringify({ token_hash: tokenHash, type }),
+  })
+  const tokens = authTokensSchema.parse(data)
+  setTokens(tokens.access_token, tokens.refresh_token)
+  return tokens
 }
 
 export async function refreshSession(): Promise<AuthTokens | null> {

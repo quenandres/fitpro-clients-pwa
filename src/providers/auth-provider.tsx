@@ -8,13 +8,14 @@ import {
 } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
+  acceptInvite,
   getUser,
   login as gatewayLogin,
   logout as gatewayLogout,
   signup as gatewaySignup,
 } from '@/lib/gateway/auth'
 import { getAccessToken, clearTokens } from '@/lib/gateway/client'
-import type { UsuarioGateway } from '@/lib/gateway/schemas'
+import { rolPermitidoEnApp, type UsuarioGateway } from '@/lib/gateway/schemas'
 
 export type AuthState = {
   user: UsuarioGateway | null
@@ -31,8 +32,6 @@ export type AuthState = {
 
 const AuthContext = createContext<AuthState | null>(null)
 
-const ROL_CLIENTE = 'client'
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
   const [user, setUser] = useState<UsuarioGateway | null>(null)
@@ -46,6 +45,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     try {
       const u = await getUser()
+      if (!rolPermitidoEnApp(u.role)) {
+        clearTokens()
+        setUser(null)
+        sessionStorage.setItem('fitpro_auth_motivo', 'rol')
+        return
+      }
       setUser(u)
     } catch {
       clearTokens()
@@ -56,6 +61,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false
     void (async () => {
+      const params = new URLSearchParams(window.location.search)
+      const tokenHash = params.get('token_hash')
+      const type = params.get('type')
+      if (tokenHash && type) {
+        try {
+          await acceptInvite(tokenHash, type)
+          const url = new URL(window.location.href)
+          url.searchParams.delete('token_hash')
+          url.searchParams.delete('type')
+          window.history.replaceState(null, '', `${url.pathname}${url.search}`)
+        } catch {
+          // El enlace venció: la pantalla de login muestra el formulario.
+        }
+      }
       await refreshUser()
       if (!cancelled) setIsLoading(false)
     })()
@@ -68,9 +87,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (email: string, password: string) => {
       await gatewayLogin(email, password)
       const u = await getUser()
-      if (u.role && u.role !== ROL_CLIENTE) {
+      if (!rolPermitidoEnApp(u.role)) {
         await gatewayLogout()
-        throw new Error('Esta app es solo para clientes. Usa la app de entrenador.')
+        throw new Error('Esta app no está disponible para este tipo de cuenta.')
       }
       setUser(u)
       queryClient.clear()

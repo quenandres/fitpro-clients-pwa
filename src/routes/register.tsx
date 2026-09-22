@@ -13,11 +13,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AppShell } from '@/components/AppShell'
 import { mensajeDeError } from '@/lib/gateway/errors'
+import { rolPermitidoEnApp } from '@/lib/gateway/schemas'
 import { useAuth } from '@/providers/auth-provider'
 
 export const Route = createFileRoute('/register')({
   beforeLoad: ({ context }) => {
-    if (context.auth.isAuthenticated) {
+    if (
+      context.auth.isAuthenticated &&
+      rolPermitidoEnApp(context.auth.user?.role)
+    ) {
       throw redirect({ to: '/' })
     }
   },

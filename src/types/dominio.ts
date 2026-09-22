@@ -6,6 +6,10 @@ export interface EjercicioPrescrito {
   series: number
   repeticiones: number
   peso_objetivo_kg?: number
+  descripcion: string
+  pasos: string[]
+  imagen_url: string
+  gif_url?: string
 }
 
 export interface Sesion {

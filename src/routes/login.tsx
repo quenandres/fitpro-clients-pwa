@@ -1,5 +1,6 @@
 import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -12,11 +13,20 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AppShell } from '@/components/AppShell'
 import { mensajeDeError } from '@/lib/gateway/errors'
+import { rolPermitidoEnApp } from '@/lib/gateway/schemas'
 import { useAuth } from '@/providers/auth-provider'
 
+const loginSearchSchema = z.object({
+  redirect: z.string().optional(),
+})
+
 export const Route = createFileRoute('/login')({
+  validateSearch: loginSearchSchema,
   beforeLoad: ({ context }) => {
-    if (context.auth.isAuthenticated) {
+    if (
+      context.auth.isAuthenticated &&
+      rolPermitidoEnApp(context.auth.user?.role)
+    ) {
       throw redirect({ to: '/' })
     }
   },
@@ -28,7 +38,12 @@ function LoginPage() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(() => {
+    if (typeof sessionStorage === 'undefined') return null
+    if (sessionStorage.getItem('fitpro_auth_motivo') !== 'rol') return null
+    sessionStorage.removeItem('fitpro_auth_motivo')
+    return 'Esta app no está disponible para este tipo de cuenta.'
+  })
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {

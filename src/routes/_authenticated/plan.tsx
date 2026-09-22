@@ -15,9 +15,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
-import { PrototypeBanner } from '@/components/PrototypeBanner'
 import { SesionPreview } from '@/components/SesionPreview'
-import { planMock } from '@/lib/mock/datos'
+import { usePlan } from '@/lib/gateway/hooks'
 import type { Sesion } from '@/types/dominio'
 import { cn } from '@/lib/utils'
 
@@ -26,10 +25,33 @@ export const Route = createFileRoute('/_authenticated/plan')({
 })
 
 function PlanPage() {
-  const [seleccionada, setSeleccionada] = useState<Sesion | null>(
-    planMock.semanas[1]?.sesiones[0] ?? null,
-  )
+  const { data: plan, isLoading, isError } = usePlan()
+  const [seleccionada, setSeleccionada] = useState<Sesion | null>(null)
   const [sheetAbierto, setSheetAbierto] = useState(false)
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <header>
+          <h1 className="text-2xl font-bold">Tu plan</h1>
+          <p className="text-muted-foreground">Cargando…</p>
+        </header>
+      </div>
+    )
+  }
+
+  if (isError || !plan) {
+    return (
+      <div className="space-y-6">
+        <header>
+          <h1 className="text-2xl font-bold">Tu plan</h1>
+          <p className="text-muted-foreground">
+            Aún no tienes un plan activo asignado.
+          </p>
+        </header>
+      </div>
+    )
+  }
 
   function seleccionarSesion(sesion: Sesion) {
     setSeleccionada(sesion)
@@ -43,20 +65,18 @@ function PlanPage() {
       <header>
         <h1 className="text-2xl font-bold">Tu plan</h1>
         <p className="text-muted-foreground">
-          {planMock.nombre} · Semana {planMock.semana_actual}
+          {plan.nombre} · Semana {plan.semana_actual}
         </p>
       </header>
 
-      <PrototypeBanner mensaje="Datos de ejemplo hasta que existan endpoints de plan en el gateway." />
-
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-4">
-          {planMock.semanas.map((semana) => (
+          {plan.semanas.map((semana) => (
             <Card key={semana.numero}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg">
                   Semana {semana.numero}
-                  {semana.numero === planMock.semana_actual && (
+                  {semana.numero === plan.semana_actual && (
                     <Badge className="ml-2" variant="secondary">
                       Actual
                     </Badge>

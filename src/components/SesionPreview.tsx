@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { buttonVariants } from '@/components/ui/button'
+import { HISTORIAL_SEARCH_DEFAULT } from '@/lib/routes/historialSearch'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -40,6 +41,7 @@ export function SesionPreview({ sesion, onCerrar }: SesionPreviewProps) {
               {ej.series} series × {ej.repeticiones} reps
               {ej.peso_objetivo_kg ? ` · ${ej.peso_objetivo_kg} kg` : ''}
             </p>
+            <p className="mt-1 text-muted-foreground">{ej.descripcion}</p>
           </li>
         ))}
       </ul>
@@ -47,19 +49,20 @@ export function SesionPreview({ sesion, onCerrar }: SesionPreviewProps) {
         {soloLectura ? (
           <Link
             to="/historial"
+            search={HISTORIAL_SEARCH_DEFAULT}
             onClick={onCerrar}
             className={cn(buttonVariants({ variant: 'secondary' }), 'w-full')}
           >
-            Ver en historial
+            Ver seguimiento
           </Link>
         ) : (
           <Link
-            to="/sesion/$sesionId"
+            to="/sesion/$sesionId/detalle"
             params={{ sesionId: sesion.id }}
             onClick={onCerrar}
             className={cn(buttonVariants({ size: 'lg' }), 'w-full')}
           >
-            Empezar esta sesión
+            Ver ejercicios
           </Link>
         )}
       </div>

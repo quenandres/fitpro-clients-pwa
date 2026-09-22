@@ -10,7 +10,7 @@
 > sobre Base UI, con Geist**, y este archivo lo declara completo. No importar
 > clases, componentes ni recetas desde otros repos.
 >
-> Última revisión: 2026-09-09
+> Última revisión: 2026-09-14
 
 ---
 
@@ -32,7 +32,7 @@ guardar — y nada más. El resto es superficie neutra y aire.
 | **Números grandes** | Peso, reps y series se leen a un metro. Son el contenido, no la decoración. |
 | **Tokens primero** | Colores vía utilidades mapeadas a tokens. Nunca hex crudo en componentes. |
 | **shadcn antes que CSS custom** | Agregar el componente con el CLI y componerlo. Inventar una variante es el último recurso. |
-| **Pocas pantallas** | Siete rutas (`CLAUDE.md §7`), cinco en la nav. Si una idea necesita más, probablemente no es de esta app. |
+| **Pocas pantallas** | Rutas acotadas (`CLAUDE.md §7`), seis en la nav (C13). Si una idea necesita más, probablemente no es de esta app. |
 | **Español en la UI** | Etiquetas, vacíos, errores y toasts en español. Tono directo, motivador, sin marketing vacío. |
 | **Accesibilidad mínima** | Foco visible, `aria-label` en botones de solo icono, `role` en vacío/error, `prefers-reduced-motion`. |
 | **Honestidad de estado** | Si una serie no se sincronizó, se dice. Nunca fingir guardado. |
@@ -103,7 +103,7 @@ no las variables a mano.
 | `--accent` / `--accent-foreground` | `bg-accent` | Hover, item seleccionado |
 | `--destructive` | `bg-destructive` / `text-destructive` | Eliminar, error |
 | `--border` / `--input` / `--ring` | `border-border` / `ring-ring` | Bordes, campos, anillo de foco |
-| `--chart-1…5` | — | Gráficas de progreso (§12) |
+| `--chart-1…5` | `bg-chart-1` / `text-chart-1` | Gráficas: `--chart-1` es el verde de marca; el resto, escala neutra (§12) |
 | `--sidebar-*` | — | **Sin uso**: esta app no tiene sidebar. Ignorar. |
 
 ### Modo oscuro
@@ -221,25 +221,27 @@ salve el fondo**. Toda barra fija respeta `env(safe-area-inset-bottom)` y
 
 ```
 <AppShell>
-├── header (md+): top nav horizontal — 5 items
+├── header (md+): top nav horizontal — 6 items
 ├── <main>  px-4, max-w-6xl mx-auto, padding inferior = nav + safe area
-└── bottom nav (< md): 5 items + safe area — oculta en player y auth
+└── bottom nav (< md): 6 items + safe area — oculta en player y auth
 ```
 
-### Nav — 5 items (2026-09-09)
+### Nav — 6 items (2026-09-15, C13)
 
-| Item | Ruta | Icono (lucide) |
-|------|------|----------------|
-| Hoy | `/` | `Home` |
-| Plan | `/plan` | `CalendarDays` |
-| Historial | `/historial` | `History` |
-| Progreso | `/progreso` | `Images` |
-| Perfil | `/perfil` | `User` |
+| Item | Ruta | Icono (lucide) | Label móvil |
+|------|------|----------------|-------------|
+| Hoy | `/` | `Home` | Hoy |
+| Plan | `/plan` | `CalendarDays` | Plan |
+| Historial | `/historial` | `History` | Hist. |
+| Progreso | `/progreso` | `Images` | Fotos |
+| Comunidades | `/comunidades` | `Users` | Grupos |
+| Perfil | `/perfil` | `User` | Perfil |
 
-- `< md`: bottom nav fija. `md+`: barra superior horizontal (mismos 5 items).
+- `< md`: bottom nav fija. `md+`: barra superior horizontal (mismos 6 items).
 - Activo = `text-primary` + `bg-primary/10`. Inactivo = `text-muted-foreground`.
 - Objetivo táctil ≥ 48px por item.
-- **Oculta en:** `/login`, `/register`, `/sesion/$sesionId`.
+- **Oculta en:** `/login`, `/register`, `/sesion/$sesionId` (solo el player;
+  `/sesion/$sesionId/detalle` sí muestra nav).
 
 ### Z-index
 
@@ -388,10 +390,11 @@ Es la razón de existir de esta app. Reglas propias:
 |-------|---------|
 | Inmersiva | Sin bottom nav. Salida explícita arriba a la izquierda, con confirmación si hay progreso sin guardar. |
 | Un ejercicio a la vez | El foco es el ejercicio actual; el resto, colapsado o en un paso siguiente. |
+| Demo del movimiento | Foto/ilustración de cómo se hace, nombre, descripción y 3 pasos. |
 | Registro en la thumb zone | Campos de peso/reps y «Completar serie» en la mitad inferior. |
 | Números grandes | `metric-xl`, `tabular-nums`. Se leen desde el suelo. |
-| Progreso siempre visible | Serie X de Y, ejercicio N de M. `Progress` con `--primary`. |
-| Descanso | Cronómetro con saltar/añadir tiempo, botones ≥ 56px. |
+| Progreso siempre visible | Serie X de Y, ejercicio N de M. Chips + anillo de descanso. |
+| Descanso | Cronómetro circular, pausar/reanudar, saltar y +30 s. Botones ≥ 56px. |
 | Prefill inteligente | Prellenar con lo prescrito o con la última sesión. Editar cuesta un toque. |
 | Sin pérdida | Cualquier salida con series sin enviar pide confirmación. |
 | Pantalla activa | Considerar Wake Lock durante la sesión (evaluar antes de implementar; requiere HTTPS). |
@@ -424,7 +427,7 @@ Mobile-first; **100% responsive** en tablet y escritorio (`CLAUDE.md` C6, 2026-0
 | Breakpoint | Comportamiento |
 |------------|----------------|
 | `< md` | Una columna, bottom nav, overlays en sheet, CTAs full-width, player apilado. |
-| `md+` | Top nav de 5 items. Contenido `max-w-6xl`. Dos columnas donde aporte (Hoy, Plan, Historial, Player, Progreso, Perfil). |
+| `md+` | Top nav de 6 items. Contenido `max-w-6xl`. Dos columnas donde aporte (Hoy, Plan, Historial, Player, Progreso, Comunidades, Perfil). |
 | `lg+` | Mismo layout `md+` con más aire; no un tercer breakpoint de producto. |
 
 No hay sidebar de gestión ni layout de cockpit de entrenadores. Probar cada
@@ -434,13 +437,17 @@ pantalla en **375px y ~1280px**, en `.dark`.
 
 ## 12. Gráficas de progreso
 
-Cuando `/historial` o `/perfil` muestren progreso:
+`/` (Hoy) muestra un panel de progreso de prototipo (2026-09-14): volumen en
+barras, carga media en línea, racha, meta y resumen. Los datos viven en
+`lib/mock/datos.ts` hasta que exista el gateway.
 
-- Usar `--chart-1…5` de `index.css`. **Hoy son cinco grises** — si se necesita
-  color de serie, definirlo como token allí, no en el componente.
-- Una métrica por gráfica. Se quiere ver si sube el peso, no un panel.
-- Etiquetar ejes con unidades (`kg`, `reps`, semana).
+- Usar `--chart-1…5` de `index.css`. **`--chart-1` es el verde de marca**;
+  `--chart-2…5` son neutros para ejes y fondos.
+- Una métrica por gráfica. Vocabulario de entrenamiento: volumen (kg), carga
+  media, racha, meta semanal. No calorías ni macros.
+- Etiquetar ejes con unidades (`kg`, `reps`, día/semana).
 - Toda gráfica necesita su estado vacío y el de "aún no hay suficientes datos".
+- SVG/CSS con tokens. No hex. Respetar `prefers-reduced-motion`.
 
 ---
 
@@ -513,6 +520,8 @@ Cuando `/historial` o `/perfil` muestren progreso:
 | Tokens y base | [src/index.css](src/index.css) |
 | Componentes UI | [src/components/ui/](src/components/ui/) |
 | Config de shadcn | [components.json](components.json) |
+| Hoy (progreso) | [src/routes/_authenticated/index.tsx](src/routes/_authenticated/index.tsx) |
+| Detalle de sesión | [src/routes/_authenticated/sesion.$sesionId.detalle.tsx](src/routes/_authenticated/sesion.$sesionId.detalle.tsx) |
 | Shell / nav | [src/components/AppShell.tsx](src/components/AppShell.tsx) |
 | Player | [src/routes/_authenticated/sesion.$sesionId.tsx](src/routes/_authenticated/sesion.$sesionId.tsx) |
 | Auth (login/register) | [src/routes/login.tsx](src/routes/login.tsx), [register.tsx](src/routes/register.tsx) |

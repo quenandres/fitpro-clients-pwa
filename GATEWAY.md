@@ -1,104 +1,58 @@
-# Contrato de gateway pendiente (fitpro-clients)
+# Contrato gym-gateway (fitpro-clients)
 
-Este documento lista lo que **gym-gateway** ya expone y lo que falta para
-que la PWA de clientes deje el modo prototipo.
+Actualizado: 2026-09-20
 
-Verificado en `gym-gateway` (2026-09-09).
+## Auth
 
-## Disponible hoy
+| Método | Ruta | Notas |
+|--------|------|-------|
+| POST | `/api/auth/signup` | Body: `{ email, password, app: "client", full_name? }` |
+| POST | `/api/auth/login` | |
+| POST | `/api/auth/refresh` | |
+| POST | `/api/auth/logout` | |
+| GET | `/api/auth/user` | Incluye `role` de `users.profiles` |
 
-| Método | Ruta | Uso en fitpro-clients |
-|--------|------|------------------------|
-| POST | `/api/auth/signup` | `/register` |
-| POST | `/api/auth/login` | `/login` |
-| POST | `/api/auth/refresh` | Renovación de token |
-| POST | `/api/auth/logout` | `/perfil` — cerrar sesión |
-| GET | `/api/auth/user` | AuthProvider, `/perfil` |
+## Cliente (PWA)
 
-### Pendiente en auth
+| Método | Ruta | Uso |
+|--------|------|-----|
+| GET | `/api/clientes/me/plan` | Plan activo con ejercicios + media firmada |
+| GET | `/api/clientes/me/sesion-hoy` | Sesión del día + racha |
+| GET | `/api/clientes/me/historial` | Sesiones completadas |
+| POST | `/api/sesiones/{plan_session_id}/iniciar` | Crea sesión de ejecución |
+| POST | `/api/sesiones/{session_id}/series` | Persiste serie |
+| GET | `/api/sesiones/{session_id}/series` | Lista series |
+| POST | `/api/sesiones/{session_id}/completar` | Marca sesión completada |
+| GET | `/api/media/ejercicios/{id}` | URLs firmadas imagen/GIF |
 
-- **Rol `client` en el alta:** el signup actual no asigna rol. Hay que acordar
-  que los usuarios de esta app nazcan como `client` (trigger Supabase o lógica
-  en gateway).
+## Progreso
 
-## No existe — series (player)
+| Método | Ruta |
+|--------|------|
+| GET | `/api/progreso/fotos` |
+| POST | `/api/progreso/fotos` | multipart `file` |
+| DELETE | `/api/progreso/fotos/{id}` |
 
-Sin esto el producto **no persiste entrenamientos**. El player (`/sesion/$sesionId`)
-opera en modo prototipo.
+## Comunidades
 
-### Contrato propuesto
+| Método | Ruta | Uso |
+|--------|------|-----|
+| GET | `/api/comunidades?tab=para-ti\|mis\|descubrir&q=` | Explorar |
+| GET | `/api/comunidades/{id}` | Detalle + `esMiembro`, `miRol` |
+| POST | `/api/comunidades/{id}/unirse` | Unirse (públicas) |
+| DELETE | `/api/comunidades/{id}/salir` | Salir |
+| GET | `/api/comunidades/{id}/publicaciones` | Feed |
+| POST | `/api/comunidades/{id}/publicaciones` | `{ texto, tipo }` |
+| POST | `/api/comunidades/{id}/publicaciones/{postId}/reaccion` | Toggle like |
+| GET | `/api/comunidades/{id}/eventos?estado=proximos\|pasados` | Eventos |
+| GET | `/api/comunidades/{id}/eventos/{eventoId}` | Detalle + RSVP |
+| POST | `/api/comunidades/{id}/eventos/{eventoId}/confirmar` | RSVP |
+| DELETE | `/api/comunidades/{id}/eventos/{eventoId}/confirmar` | Cancelar RSVP |
 
-```
-POST /api/sesiones/{sesion_id}/series
-Authorization: Bearer {access_token}
-Content-Type: application/json
+Cliente: `src/lib/gateway/comunidades.ts` + hooks en `comunidades-hooks.ts`.
 
-{
-  "ejercicio_id": "uuid",
-  "numero_serie": 1,
-  "peso_kg": 60,
-  "repeticiones": 8,
-  "rpe": null
-}
-
-→ 201 { "id": "uuid", "confirmada": true, ... }
-```
-
-```
-GET /api/sesiones/{sesion_id}/series
-→ 200 [{ "ejercicio_id", "numero_serie", "peso_kg", "repeticiones", ... }]
-```
-
-```
-GET /api/clientes/me/sesion-hoy
-→ 200 { "sesion": { ... }, "racha_dias": 3 }
-```
-
-```
-GET /api/clientes/me/plan
-→ 200 { "id", "nombre", "semanas": [...] }
-```
-
-```
-GET /api/clientes/me/historial
-→ 200 [{ "id", "nombre", "fecha", "series": [...] }]
-```
-
-Implementación en frontend: `src/lib/gateway/series.ts` (stubs que lanzan
-`SeriesEndpointMissingError`).
-
-## No existe — fotos de progreso
-
-Sin esto `/progreso` no puede cumplir honestidad de guardado (C9). **No** usar
-Supabase Storage desde el frontend (C1).
-
-### Contrato propuesto
-
-- Bucket privado: `progreso-fotos`
-- Tabla: `foto_progreso` (`id`, `user_id`, `creada_en`, `storage_path`)
-- RLS: solo el propio `user_id`
-
-```
-POST /api/progreso/fotos
-Content-Type: multipart/form-data
-→ 201 { "id", "creada_en", "url_firmada" }
-
-GET /api/progreso/fotos
-→ 200 [{ "id", "creada_en", "url_firmada" }]
-
-DELETE /api/progreso/fotos/{foto_id}
-→ 204
-
-GET /api/progreso/fotos/{foto_id}/url
-→ 200 { "url": "signed-url" }
-```
-
-Implementación en frontend: `src/lib/gateway/fotos.ts` (stubs).
-
-## Variables de entorno (fitpro-clients)
+## Entorno
 
 ```bash
-VITE_GATEWAY_URL=http://localhost:8000
+VITE_GATEWAY_URL=http://localhost:8008
 ```
-
-Copiar `.env.example` → `.env` antes de probar auth.

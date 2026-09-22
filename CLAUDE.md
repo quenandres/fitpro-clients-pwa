@@ -111,8 +111,9 @@ npx shadcn@latest add <componente>
 # cd ../gym-gateway && uvicorn app.main:app --reload
 ```
 
-**Variables de entorno:** `.env.example` con `VITE_GATEWAY_URL`. Copiar a `.env`
-antes de probar auth. No agregar `VITE_SUPABASE_*` (C1).
+**Variables de entorno:** `.env.example` con `VITE_GATEWAY_URL` (puerto **8008**
+si el gateway corre en Docker). Copiar a `.env` antes de probar auth. No
+agregar `VITE_SUPABASE_*` (C1).
 
 ---
 
@@ -134,7 +135,9 @@ antes de probar auth. No agregar `VITE_SUPABASE_*` (C1).
    (`lib/gateway/`), escrito en este repo.
 5. **El rol de esta app es `client`.** El gateway ya hace RBAC server-side; el
    gating del frontend es barrera secundaria, no la principal. No exponer
-   pantallas de gestión (rutinas, otras personas, catálogos).
+   pantallas de gestión (rutinas, otras personas, catálogos). **Excepción
+   temporal (C12):** también entra `admin`, para probar la PWA con cuentas de
+   administración.
 6. **Dominio en `src/types/dominio.ts`.** Tipos derivados del contrato del
    gateway; hoy Hoy/Plan/Historial usan mock en `lib/mock/`. Reglas: **`ejercicio_id`**
    nunca nombre como clave; Zod en respuestas del gateway (C4).
@@ -185,8 +188,15 @@ anotarla aquí con fecha.
   servidor lo confirma (`DESIGN.md §7`).
 - **C10 — `/register` abierto (2026-09-09).** Alta pública como `client`; falta
   que el gateway asigne rol en signup.
-- **C11 — Nav de 5 items (2026-09-09).** Hoy, Plan, Historial, Progreso, Perfil.
-  El player oculta la nav.
+- **C11 — Nav de 5 items (2026-09-09).** Sustituido por C13.
+- **C12 — Entrenador también entra como cliente (2026-09-20).** La PWA admite
+  `client`, `admin`, `superadmin` y `trainer`. Un entrenador puede usar su
+  propio plan/rutinas. Solo se bloquea `gym`. No abre pantallas de gestión.
+- **C13 — Comunidades + nav de 6 items (2026-09-15).** Sexto ítem **Comunidades**
+  (`Users`) → `/comunidades`. Núcleo persistido vía `gym-gateway` (`/api/comunidades/*`,
+  TanStack Query en `lib/gateway/comunidades-hooks.ts`). Explorar, unirse/salir,
+  publicar, likes y RSVP a eventos. El store mock (`comunidades-store.ts`) queda
+  obsoleto para lectura; no usarlo en rutas nuevas.
 - **Pendientes de decidir:** nombre definitivo del producto/manifest; Sentry/PostHog;
   Vitest; iconos PWA.
 
@@ -217,14 +227,20 @@ TanStack Router file-based en `src/routes/` → `routeTree.gen.ts` (generado).
 
 - **Públicas:** `/register`, `/login` (sin nav; redirigen a `/` si hay JWT).
 - **Protegidas (rol `client`, layout `_authenticated` + AppShell):**
-  - `/` — Hoy: sesión del día, racha, CTA al player.
+  - `/` — Hoy: sesión del día, racha, CTA al detalle de sesión.
   - `/plan` — plan asignado (lectura); preview drawer móvil / split `md+`.
+  - `/sesion/$sesionId/detalle` — lista de ejercicios de la sesión (con nav).
   - `/sesion/$sesionId` — **player** inmersivo (sin nav). Prototipo hasta endpoint de series.
   - `/historial` — log de sesiones; detalle drawer / split `md+`.
   - `/progreso` — fotos antes/después. Prototipo hasta Storage en gateway.
+  - `/comunidades` — explorar comunidades (tabs, búsqueda, Unirme). Prototipo mock.
+  - `/comunidades/$comunidadId` — inicio de comunidad (Unirme/Salir, resumen).
+  - `/comunidades/$comunidadId/publicaciones` — feed + publicar (miembros).
+  - `/comunidades/$comunidadId/eventos` — próximos/pasados + RSVP.
+  - `/comunidades/$comunidadId/eventos/$eventoId` — detalle de evento + RSVP.
   - `/perfil` — identidad, tema, logout.
 
-Nav de 5 items (C11): Hoy, Plan, Historial, Progreso, Perfil.
+Nav de 6 items (C13): Hoy, Plan, Historial, Progreso, Comunidades, Perfil.
 
 ---
 

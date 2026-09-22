@@ -1,18 +1,18 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
 import { AppShell } from '@/components/AppShell'
+import { rolPermitidoEnApp } from '@/lib/gateway/schemas'
 
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: ({ context, location }) => {
     if (context.auth.isLoading) return
-    if (!context.auth.isAuthenticated) {
+    if (
+      !context.auth.isAuthenticated ||
+      !rolPermitidoEnApp(context.auth.user?.role)
+    ) {
       throw redirect({
         to: '/login',
-        search: { redirect: location.href },
+        search: { redirect: location.pathname },
       })
-    }
-    const role = context.auth.user?.role
-    if (role && role !== 'client') {
-      throw redirect({ to: '/login' })
     }
   },
   component: AuthenticatedLayout,

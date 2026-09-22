@@ -32,6 +32,23 @@ export function clearTokens(): void {
   localStorage.removeItem(REFRESH_KEY)
 }
 
+/** Guarda la sesión que Supabase deja en el hash al abrir el enlace del correo. */
+export function consumeSupabaseRedirect(): void {
+  if (typeof window === 'undefined') return
+  const hash = window.location.hash.startsWith('#')
+    ? window.location.hash.slice(1)
+    : ''
+  if (!hash) return
+  const params = new URLSearchParams(hash)
+  const access = params.get('access_token')
+  const refresh = params.get('refresh_token')
+  if (!access || !refresh) return
+  setTokens(access, refresh)
+  const url = new URL(window.location.href)
+  url.hash = ''
+  window.history.replaceState(null, '', `${url.pathname}${url.search}`)
+}
+
 type FetchOptions = RequestInit & {
   auth?: boolean
   skipRefresh?: boolean
@@ -106,3 +123,5 @@ export async function gatewayFetch<T>(
 
   return body as T
 }
+
+consumeSupabaseRedirect()

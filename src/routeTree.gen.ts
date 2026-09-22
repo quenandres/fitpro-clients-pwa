@@ -17,7 +17,16 @@ import { Route as AuthenticatedHistorialRouteImport } from './routes/_authentica
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedPlanRouteImport } from './routes/_authenticated/plan'
 import { Route as AuthenticatedProgresoRouteImport } from './routes/_authenticated/progreso'
+import { Route as AuthenticatedComunidadesIndexRouteImport } from './routes/_authenticated/comunidades/index'
+import { Route as AuthenticatedComunidadesComunidadIdRouteImport } from './routes/_authenticated/comunidades/$comunidadId'
+import { Route as AuthenticatedHistorialSesionIdRouteImport } from './routes/_authenticated/historial.$sesionId'
 import { Route as AuthenticatedSesionSesionIdRouteImport } from './routes/_authenticated/sesion.$sesionId'
+import { Route as AuthenticatedComunidadesComunidadIdIndexRouteImport } from './routes/_authenticated/comunidades/$comunidadId.index'
+import { Route as AuthenticatedComunidadesComunidadIdEventosRouteImport } from './routes/_authenticated/comunidades/$comunidadId.eventos'
+import { Route as AuthenticatedComunidadesComunidadIdPublicacionesRouteImport } from './routes/_authenticated/comunidades/$comunidadId.publicaciones'
+import { Route as AuthenticatedSesionSesionIdIndexRouteImport } from './routes/_authenticated/sesion.$sesionId.index'
+import { Route as AuthenticatedSesionSesionIdDetalleRouteImport } from './routes/_authenticated/sesion.$sesionId.detalle'
+import { Route as AuthenticatedComunidadesComunidadIdEventosEventoIdRouteImport } from './routes/_authenticated/comunidades/$comunidadId.eventos.$eventoId'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -58,44 +67,123 @@ const AuthenticatedProgresoRoute = AuthenticatedProgresoRouteImport.update({
   path: '/progreso',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedComunidadesIndexRoute =
+  AuthenticatedComunidadesIndexRouteImport.update({
+    id: '/comunidades/',
+    path: '/comunidades/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedComunidadesComunidadIdRoute =
+  AuthenticatedComunidadesComunidadIdRouteImport.update({
+    id: '/comunidades/$comunidadId',
+    path: '/comunidades/$comunidadId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedHistorialSesionIdRoute =
+  AuthenticatedHistorialSesionIdRouteImport.update({
+    id: '/$sesionId',
+    path: '/$sesionId',
+    getParentRoute: () => AuthenticatedHistorialRoute,
+  } as any)
 const AuthenticatedSesionSesionIdRoute =
   AuthenticatedSesionSesionIdRouteImport.update({
     id: '/sesion/$sesionId',
     path: '/sesion/$sesionId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedComunidadesComunidadIdIndexRoute =
+  AuthenticatedComunidadesComunidadIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedComunidadesComunidadIdRoute,
+  } as any)
+const AuthenticatedComunidadesComunidadIdEventosRoute =
+  AuthenticatedComunidadesComunidadIdEventosRouteImport.update({
+    id: '/eventos',
+    path: '/eventos',
+    getParentRoute: () => AuthenticatedComunidadesComunidadIdRoute,
+  } as any)
+const AuthenticatedComunidadesComunidadIdPublicacionesRoute =
+  AuthenticatedComunidadesComunidadIdPublicacionesRouteImport.update({
+    id: '/publicaciones',
+    path: '/publicaciones',
+    getParentRoute: () => AuthenticatedComunidadesComunidadIdRoute,
+  } as any)
+const AuthenticatedSesionSesionIdIndexRoute =
+  AuthenticatedSesionSesionIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedSesionSesionIdRoute,
+  } as any)
+const AuthenticatedSesionSesionIdDetalleRoute =
+  AuthenticatedSesionSesionIdDetalleRouteImport.update({
+    id: '/detalle',
+    path: '/detalle',
+    getParentRoute: () => AuthenticatedSesionSesionIdRoute,
+  } as any)
+const AuthenticatedComunidadesComunidadIdEventosEventoIdRoute =
+  AuthenticatedComunidadesComunidadIdEventosEventoIdRouteImport.update({
+    id: '/$eventoId',
+    path: '/$eventoId',
+    getParentRoute: () => AuthenticatedComunidadesComunidadIdEventosRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/historial': typeof AuthenticatedHistorialRoute
+  '/historial': typeof AuthenticatedHistorialRouteWithChildren
   '/perfil': typeof AuthenticatedPerfilRoute
   '/plan': typeof AuthenticatedPlanRoute
   '/progreso': typeof AuthenticatedProgresoRoute
-  '/sesion/$sesionId': typeof AuthenticatedSesionSesionIdRoute
+  '/comunidades/$comunidadId': typeof AuthenticatedComunidadesComunidadIdRouteWithChildren
+  '/historial/$sesionId': typeof AuthenticatedHistorialSesionIdRoute
+  '/sesion/$sesionId': typeof AuthenticatedSesionSesionIdRouteWithChildren
+  '/comunidades/': typeof AuthenticatedComunidadesIndexRoute
+  '/comunidades/$comunidadId/eventos': typeof AuthenticatedComunidadesComunidadIdEventosRouteWithChildren
+  '/comunidades/$comunidadId/publicaciones': typeof AuthenticatedComunidadesComunidadIdPublicacionesRoute
+  '/sesion/$sesionId/detalle': typeof AuthenticatedSesionSesionIdDetalleRoute
+  '/comunidades/$comunidadId/': typeof AuthenticatedComunidadesComunidadIdIndexRoute
+  '/sesion/$sesionId/': typeof AuthenticatedSesionSesionIdIndexRoute
+  '/comunidades/$comunidadId/eventos/$eventoId': typeof AuthenticatedComunidadesComunidadIdEventosEventoIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/historial': typeof AuthenticatedHistorialRoute
+  '/historial': typeof AuthenticatedHistorialRouteWithChildren
   '/perfil': typeof AuthenticatedPerfilRoute
   '/plan': typeof AuthenticatedPlanRoute
   '/progreso': typeof AuthenticatedProgresoRoute
   '/': typeof AuthenticatedIndexRoute
-  '/sesion/$sesionId': typeof AuthenticatedSesionSesionIdRoute
+  '/historial/$sesionId': typeof AuthenticatedHistorialSesionIdRoute
+  '/comunidades': typeof AuthenticatedComunidadesIndexRoute
+  '/comunidades/$comunidadId/eventos': typeof AuthenticatedComunidadesComunidadIdEventosRouteWithChildren
+  '/comunidades/$comunidadId/publicaciones': typeof AuthenticatedComunidadesComunidadIdPublicacionesRoute
+  '/sesion/$sesionId/detalle': typeof AuthenticatedSesionSesionIdDetalleRoute
+  '/comunidades/$comunidadId': typeof AuthenticatedComunidadesComunidadIdIndexRoute
+  '/sesion/$sesionId': typeof AuthenticatedSesionSesionIdIndexRoute
+  '/comunidades/$comunidadId/eventos/$eventoId': typeof AuthenticatedComunidadesComunidadIdEventosEventoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/_authenticated/historial': typeof AuthenticatedHistorialRoute
+  '/_authenticated/historial': typeof AuthenticatedHistorialRouteWithChildren
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/plan': typeof AuthenticatedPlanRoute
   '/_authenticated/progreso': typeof AuthenticatedProgresoRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
-  '/_authenticated/sesion/$sesionId': typeof AuthenticatedSesionSesionIdRoute
+  '/_authenticated/comunidades/$comunidadId': typeof AuthenticatedComunidadesComunidadIdRouteWithChildren
+  '/_authenticated/historial/$sesionId': typeof AuthenticatedHistorialSesionIdRoute
+  '/_authenticated/sesion/$sesionId': typeof AuthenticatedSesionSesionIdRouteWithChildren
+  '/_authenticated/comunidades/': typeof AuthenticatedComunidadesIndexRoute
+  '/_authenticated/comunidades/$comunidadId/eventos': typeof AuthenticatedComunidadesComunidadIdEventosRouteWithChildren
+  '/_authenticated/comunidades/$comunidadId/publicaciones': typeof AuthenticatedComunidadesComunidadIdPublicacionesRoute
+  '/_authenticated/sesion/$sesionId/detalle': typeof AuthenticatedSesionSesionIdDetalleRoute
+  '/_authenticated/comunidades/$comunidadId/': typeof AuthenticatedComunidadesComunidadIdIndexRoute
+  '/_authenticated/sesion/$sesionId/': typeof AuthenticatedSesionSesionIdIndexRoute
+  '/_authenticated/comunidades/$comunidadId/eventos/$eventoId': typeof AuthenticatedComunidadesComunidadIdEventosEventoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -107,7 +195,16 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/plan'
     | '/progreso'
+    | '/comunidades/$comunidadId'
+    | '/historial/$sesionId'
     | '/sesion/$sesionId'
+    | '/comunidades/'
+    | '/comunidades/$comunidadId/eventos'
+    | '/comunidades/$comunidadId/publicaciones'
+    | '/sesion/$sesionId/detalle'
+    | '/comunidades/$comunidadId/'
+    | '/sesion/$sesionId/'
+    | '/comunidades/$comunidadId/eventos/$eventoId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -117,7 +214,14 @@ export interface FileRouteTypes {
     | '/plan'
     | '/progreso'
     | '/'
+    | '/historial/$sesionId'
+    | '/comunidades'
+    | '/comunidades/$comunidadId/eventos'
+    | '/comunidades/$comunidadId/publicaciones'
+    | '/sesion/$sesionId/detalle'
+    | '/comunidades/$comunidadId'
     | '/sesion/$sesionId'
+    | '/comunidades/$comunidadId/eventos/$eventoId'
   id:
     | '__root__'
     | '/_authenticated'
@@ -128,7 +232,16 @@ export interface FileRouteTypes {
     | '/_authenticated/plan'
     | '/_authenticated/progreso'
     | '/_authenticated/'
+    | '/_authenticated/comunidades/$comunidadId'
+    | '/_authenticated/historial/$sesionId'
     | '/_authenticated/sesion/$sesionId'
+    | '/_authenticated/comunidades/'
+    | '/_authenticated/comunidades/$comunidadId/eventos'
+    | '/_authenticated/comunidades/$comunidadId/publicaciones'
+    | '/_authenticated/sesion/$sesionId/detalle'
+    | '/_authenticated/comunidades/$comunidadId/'
+    | '/_authenticated/sesion/$sesionId/'
+    | '/_authenticated/comunidades/$comunidadId/eventos/$eventoId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -195,6 +308,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProgresoRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/comunidades/': {
+      id: '/_authenticated/comunidades/'
+      path: '/comunidades'
+      fullPath: '/comunidades/'
+      preLoaderRoute: typeof AuthenticatedComunidadesIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/comunidades/$comunidadId': {
+      id: '/_authenticated/comunidades/$comunidadId'
+      path: '/comunidades/$comunidadId'
+      fullPath: '/comunidades/$comunidadId'
+      preLoaderRoute: typeof AuthenticatedComunidadesComunidadIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/historial/$sesionId': {
+      id: '/_authenticated/historial/$sesionId'
+      path: '/$sesionId'
+      fullPath: '/historial/$sesionId'
+      preLoaderRoute: typeof AuthenticatedHistorialSesionIdRouteImport
+      parentRoute: typeof AuthenticatedHistorialRoute
+    }
     '/_authenticated/sesion/$sesionId': {
       id: '/_authenticated/sesion/$sesionId'
       path: '/sesion/$sesionId'
@@ -202,25 +336,141 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSesionSesionIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/comunidades/$comunidadId/': {
+      id: '/_authenticated/comunidades/$comunidadId/'
+      path: '/'
+      fullPath: '/comunidades/$comunidadId/'
+      preLoaderRoute: typeof AuthenticatedComunidadesComunidadIdIndexRouteImport
+      parentRoute: typeof AuthenticatedComunidadesComunidadIdRoute
+    }
+    '/_authenticated/comunidades/$comunidadId/eventos': {
+      id: '/_authenticated/comunidades/$comunidadId/eventos'
+      path: '/eventos'
+      fullPath: '/comunidades/$comunidadId/eventos'
+      preLoaderRoute: typeof AuthenticatedComunidadesComunidadIdEventosRouteImport
+      parentRoute: typeof AuthenticatedComunidadesComunidadIdRoute
+    }
+    '/_authenticated/comunidades/$comunidadId/publicaciones': {
+      id: '/_authenticated/comunidades/$comunidadId/publicaciones'
+      path: '/publicaciones'
+      fullPath: '/comunidades/$comunidadId/publicaciones'
+      preLoaderRoute: typeof AuthenticatedComunidadesComunidadIdPublicacionesRouteImport
+      parentRoute: typeof AuthenticatedComunidadesComunidadIdRoute
+    }
+    '/_authenticated/sesion/$sesionId/': {
+      id: '/_authenticated/sesion/$sesionId/'
+      path: '/'
+      fullPath: '/sesion/$sesionId/'
+      preLoaderRoute: typeof AuthenticatedSesionSesionIdIndexRouteImport
+      parentRoute: typeof AuthenticatedSesionSesionIdRoute
+    }
+    '/_authenticated/sesion/$sesionId/detalle': {
+      id: '/_authenticated/sesion/$sesionId/detalle'
+      path: '/detalle'
+      fullPath: '/sesion/$sesionId/detalle'
+      preLoaderRoute: typeof AuthenticatedSesionSesionIdDetalleRouteImport
+      parentRoute: typeof AuthenticatedSesionSesionIdRoute
+    }
+    '/_authenticated/comunidades/$comunidadId/eventos/$eventoId': {
+      id: '/_authenticated/comunidades/$comunidadId/eventos/$eventoId'
+      path: '/$eventoId'
+      fullPath: '/comunidades/$comunidadId/eventos/$eventoId'
+      preLoaderRoute: typeof AuthenticatedComunidadesComunidadIdEventosEventoIdRouteImport
+      parentRoute: typeof AuthenticatedComunidadesComunidadIdEventosRoute
+    }
   }
 }
 
+interface AuthenticatedHistorialRouteChildren {
+  AuthenticatedHistorialSesionIdRoute: typeof AuthenticatedHistorialSesionIdRoute
+}
+
+const AuthenticatedHistorialRouteChildren: AuthenticatedHistorialRouteChildren =
+  {
+    AuthenticatedHistorialSesionIdRoute: AuthenticatedHistorialSesionIdRoute,
+  }
+
+const AuthenticatedHistorialRouteWithChildren =
+  AuthenticatedHistorialRoute._addFileChildren(
+    AuthenticatedHistorialRouteChildren,
+  )
+
+interface AuthenticatedComunidadesComunidadIdEventosRouteChildren {
+  AuthenticatedComunidadesComunidadIdEventosEventoIdRoute: typeof AuthenticatedComunidadesComunidadIdEventosEventoIdRoute
+}
+
+const AuthenticatedComunidadesComunidadIdEventosRouteChildren: AuthenticatedComunidadesComunidadIdEventosRouteChildren =
+  {
+    AuthenticatedComunidadesComunidadIdEventosEventoIdRoute:
+      AuthenticatedComunidadesComunidadIdEventosEventoIdRoute,
+  }
+
+const AuthenticatedComunidadesComunidadIdEventosRouteWithChildren =
+  AuthenticatedComunidadesComunidadIdEventosRoute._addFileChildren(
+    AuthenticatedComunidadesComunidadIdEventosRouteChildren,
+  )
+
+interface AuthenticatedComunidadesComunidadIdRouteChildren {
+  AuthenticatedComunidadesComunidadIdEventosRoute: typeof AuthenticatedComunidadesComunidadIdEventosRouteWithChildren
+  AuthenticatedComunidadesComunidadIdPublicacionesRoute: typeof AuthenticatedComunidadesComunidadIdPublicacionesRoute
+  AuthenticatedComunidadesComunidadIdIndexRoute: typeof AuthenticatedComunidadesComunidadIdIndexRoute
+}
+
+const AuthenticatedComunidadesComunidadIdRouteChildren: AuthenticatedComunidadesComunidadIdRouteChildren =
+  {
+    AuthenticatedComunidadesComunidadIdEventosRoute:
+      AuthenticatedComunidadesComunidadIdEventosRouteWithChildren,
+    AuthenticatedComunidadesComunidadIdPublicacionesRoute:
+      AuthenticatedComunidadesComunidadIdPublicacionesRoute,
+    AuthenticatedComunidadesComunidadIdIndexRoute:
+      AuthenticatedComunidadesComunidadIdIndexRoute,
+  }
+
+const AuthenticatedComunidadesComunidadIdRouteWithChildren =
+  AuthenticatedComunidadesComunidadIdRoute._addFileChildren(
+    AuthenticatedComunidadesComunidadIdRouteChildren,
+  )
+
+interface AuthenticatedSesionSesionIdRouteChildren {
+  AuthenticatedSesionSesionIdDetalleRoute: typeof AuthenticatedSesionSesionIdDetalleRoute
+  AuthenticatedSesionSesionIdIndexRoute: typeof AuthenticatedSesionSesionIdIndexRoute
+}
+
+const AuthenticatedSesionSesionIdRouteChildren: AuthenticatedSesionSesionIdRouteChildren =
+  {
+    AuthenticatedSesionSesionIdDetalleRoute:
+      AuthenticatedSesionSesionIdDetalleRoute,
+    AuthenticatedSesionSesionIdIndexRoute:
+      AuthenticatedSesionSesionIdIndexRoute,
+  }
+
+const AuthenticatedSesionSesionIdRouteWithChildren =
+  AuthenticatedSesionSesionIdRoute._addFileChildren(
+    AuthenticatedSesionSesionIdRouteChildren,
+  )
+
 interface AuthenticatedRouteChildren {
-  AuthenticatedHistorialRoute: typeof AuthenticatedHistorialRoute
+  AuthenticatedHistorialRoute: typeof AuthenticatedHistorialRouteWithChildren
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedPlanRoute: typeof AuthenticatedPlanRoute
   AuthenticatedProgresoRoute: typeof AuthenticatedProgresoRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
-  AuthenticatedSesionSesionIdRoute: typeof AuthenticatedSesionSesionIdRoute
+  AuthenticatedComunidadesComunidadIdRoute: typeof AuthenticatedComunidadesComunidadIdRouteWithChildren
+  AuthenticatedSesionSesionIdRoute: typeof AuthenticatedSesionSesionIdRouteWithChildren
+  AuthenticatedComunidadesIndexRoute: typeof AuthenticatedComunidadesIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedHistorialRoute: AuthenticatedHistorialRoute,
+  AuthenticatedHistorialRoute: AuthenticatedHistorialRouteWithChildren,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedPlanRoute: AuthenticatedPlanRoute,
   AuthenticatedProgresoRoute: AuthenticatedProgresoRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
-  AuthenticatedSesionSesionIdRoute: AuthenticatedSesionSesionIdRoute,
+  AuthenticatedComunidadesComunidadIdRoute:
+    AuthenticatedComunidadesComunidadIdRouteWithChildren,
+  AuthenticatedSesionSesionIdRoute:
+    AuthenticatedSesionSesionIdRouteWithChildren,
+  AuthenticatedComunidadesIndexRoute: AuthenticatedComunidadesIndexRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
