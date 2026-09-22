@@ -32,7 +32,15 @@ export function clearTokens(): void {
   localStorage.removeItem(REFRESH_KEY)
 }
 
-/** Guarda la sesión que Supabase deja en el hash al abrir el enlace del correo. */
+const AUTH_HASH_ERROR_KEY = 'fitpro_auth_hash_error'
+
+function clearLocationHash(): void {
+  const url = new URL(window.location.href)
+  url.hash = ''
+  window.history.replaceState(null, '', `${url.pathname}${url.search}`)
+}
+
+/** Guarda la sesión o el error que Supabase deja en el hash del correo. */
 export function consumeSupabaseRedirect(): void {
   if (typeof window === 'undefined') return
   const hash = window.location.hash.startsWith('#')
@@ -42,11 +50,29 @@ export function consumeSupabaseRedirect(): void {
   const params = new URLSearchParams(hash)
   const access = params.get('access_token')
   const refresh = params.get('refresh_token')
-  if (!access || !refresh) return
-  setTokens(access, refresh)
-  const url = new URL(window.location.href)
-  url.hash = ''
-  window.history.replaceState(null, '', `${url.pathname}${url.search}`)
+  if (access && refresh) {
+    setTokens(access, refresh)
+    clearLocationHash()
+    return
+  }
+  const errorCode = params.get('error_code') ?? params.get('error')
+  if (errorCode) {
+    sessionStorage.setItem(AUTH_HASH_ERROR_KEY, errorCode)
+    clearLocationHash()
+  }
+}
+
+export function rememberAuthLinkError(): void {
+  if (typeof sessionStorage === 'undefined') return
+  sessionStorage.setItem(AUTH_HASH_ERROR_KEY, 'otp_expired')
+}
+
+export function takeAuthHashError(): string | null {
+  if (typeof sessionStorage === 'undefined') return null
+  const code = sessionStorage.getItem(AUTH_HASH_ERROR_KEY)
+  if (!code) return null
+  sessionStorage.removeItem(AUTH_HASH_ERROR_KEY)
+  return code
 }
 
 type FetchOptions = RequestInit & {

@@ -8,6 +8,8 @@ Actualizado: 2026-09-20
 |--------|------|-------|
 | POST | `/api/auth/signup` | Body: `{ email, password, app: "client", full_name? }` |
 | POST | `/api/auth/login` | |
+| POST | `/api/auth/recover` | Envía un código de 6 dígitos. No revela si el email existe. |
+| POST | `/api/auth/reset-password` | Body: `{ email, token, password }` → sesión |
 | POST | `/api/auth/refresh` | |
 | POST | `/api/auth/logout` | |
 | GET | `/api/auth/user` | Incluye `role` de `users.profiles` |

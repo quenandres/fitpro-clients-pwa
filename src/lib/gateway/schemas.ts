@@ -40,6 +40,22 @@ export const signupRequestSchema = z.object({
   nombre: z.string().min(1).optional(),
 })
 
+export const recoverRequestSchema = z.object({
+  email: z.string().email(),
+})
+
+export const resetPasswordRequestSchema = z.object({
+  email: z.string().email(),
+  token: z.string().regex(/^[A-Za-z0-9]{6,20}$/),
+  password: z.string().min(6).max(72),
+})
+
+export const recoverResponseSchema = z.object({
+  ok: z.literal(true),
+  email_mode: z.string().optional(),
+  dev_otp: z.string().optional(),
+})
+
 export const ejercicioPrescritoSchema = z.object({
   ejercicio_id: z.string(),
   nombre: z.string(),

@@ -12,9 +12,14 @@ import {
   getUser,
   login as gatewayLogin,
   logout as gatewayLogout,
+  resetPassword as gatewayResetPassword,
   signup as gatewaySignup,
 } from '@/lib/gateway/auth'
-import { getAccessToken, clearTokens } from '@/lib/gateway/client'
+import {
+  getAccessToken,
+  clearTokens,
+  rememberAuthLinkError,
+} from '@/lib/gateway/client'
 import { rolPermitidoEnApp, type UsuarioGateway } from '@/lib/gateway/schemas'
 
 export type AuthState = {
@@ -26,6 +31,11 @@ export type AuthState = {
     email: string,
     password: string,
   ) => Promise<{ needsEmailConfirmation: boolean }>
+  resetPassword: (
+    email: string,
+    token: string,
+    password: string,
+  ) => Promise<void>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
 }
@@ -72,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           url.searchParams.delete('type')
           window.history.replaceState(null, '', `${url.pathname}${url.search}`)
         } catch {
-          // El enlace venció: la pantalla de login muestra el formulario.
+          rememberAuthLinkError()
         }
       }
       await refreshUser()
@@ -113,6 +123,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [queryClient],
   )
 
+  const resetPassword = useCallback(
+    async (email: string, token: string, password: string) => {
+      await gatewayResetPassword(email, token, password)
+      const u = await getUser()
+      if (!rolPermitidoEnApp(u.role)) {
+        await gatewayLogout()
+        throw new Error('Esta app no está disponible para este tipo de cuenta.')
+      }
+      setUser(u)
+      queryClient.clear()
+    },
+    [queryClient],
+  )
+
   const logout = useCallback(async () => {
     try {
       await gatewayLogout()
@@ -129,6 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
     login,
     signup,
+    resetPassword,
     logout,
     refreshUser,
   }

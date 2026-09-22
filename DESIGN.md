@@ -524,7 +524,7 @@ barras, carga media en línea, racha, meta y resumen. Los datos viven en
 | Detalle de sesión | [src/routes/_authenticated/sesion.$sesionId.detalle.tsx](src/routes/_authenticated/sesion.$sesionId.detalle.tsx) |
 | Shell / nav | [src/components/AppShell.tsx](src/components/AppShell.tsx) |
 | Player | [src/routes/_authenticated/sesion.$sesionId.tsx](src/routes/_authenticated/sesion.$sesionId.tsx) |
-| Auth (login/register) | [src/routes/login.tsx](src/routes/login.tsx), [register.tsx](src/routes/register.tsx) |
+| Auth (login/register/recuperar) | [src/routes/login.tsx](src/routes/login.tsx), [register.tsx](src/routes/register.tsx), [recuperar.tsx](src/routes/recuperar.tsx) |
 | Formulario en sheet | [src/routes/_authenticated/progreso.tsx](src/routes/_authenticated/progreso.tsx) |
 
 ---

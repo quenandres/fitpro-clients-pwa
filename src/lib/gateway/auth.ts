@@ -1,6 +1,9 @@
 import {
   authTokensSchema,
   loginRequestSchema,
+  recoverRequestSchema,
+  recoverResponseSchema,
+  resetPasswordRequestSchema,
   signupRequestSchema,
   usuarioSchema,
   type AuthTokens,
@@ -68,6 +71,32 @@ export async function logout(): Promise<void> {
 export async function getUser(): Promise<UsuarioGateway> {
   const data = await gatewayFetch<unknown>('/api/auth/user')
   return usuarioSchema.parse(data)
+}
+
+export async function requestRecovery(email: string): Promise<void> {
+  const body = recoverRequestSchema.parse({ email })
+  const data = await gatewayFetch<unknown>('/api/auth/recover', {
+    method: 'POST',
+    auth: false,
+    body: JSON.stringify(body),
+  })
+  recoverResponseSchema.parse(data)
+}
+
+export async function resetPassword(
+  email: string,
+  token: string,
+  password: string,
+): Promise<AuthTokens> {
+  const body = resetPasswordRequestSchema.parse({ email, token, password })
+  const data = await gatewayFetch<unknown>('/api/auth/reset-password', {
+    method: 'POST',
+    auth: false,
+    body: JSON.stringify(body),
+  })
+  const tokens = authTokensSchema.parse(data)
+  setTokens(tokens.access_token, tokens.refresh_token)
+  return tokens
 }
 
 export async function acceptInvite(

@@ -38,7 +38,7 @@ hay que leer su documentación para trabajar aquí.
 |------|---------------|
 | `../gym-gateway` | **Backend compartido.** Es la API de esta app (§2). Un cambio de contrato cruza este límite y hay que avisar al usuario. |
 | `../fitpro` | Cockpit web de entrenadores, otro producto del mismo dominio. Comparte el **lenguaje visual** (marca, tono, español) y **a grandes rasgos el modelo de dominio** — plan, sesión, ejercicio, serie. **Nada más:** distinto stack de UI, distintas rutas, distinto código. No copiar componentes ni clases desde ahí. |
-| Otros (`gym-mcp`, `movil`, `web`, …) | Sin relación con este repo. |
+| Otros (`movil`, `web`, …) | Sin relación con este repo. |
 
 ---
 
@@ -197,6 +197,10 @@ anotarla aquí con fecha.
   TanStack Query en `lib/gateway/comunidades-hooks.ts`). Explorar, unirse/salir,
   publicar, likes y RSVP a eventos. El store mock (`comunidades-store.ts`) queda
   obsoleto para lectura; no usarlo en rutas nuevas.
+- **C14 — Recuperar acceso con código, no magic link (2026-09-22).**
+  `/recuperar` pide un OTP de 6 dígitos vía `POST /api/auth/recover` y
+  `POST /api/auth/reset-password`. El enlace de Supabase (`otp_expired` en el
+  hash) se descarta: el usuario escribe el código y una contraseña nueva.
 - **Pendientes de decidir:** nombre definitivo del producto/manifest; Sentry/PostHog;
   Vitest; iconos PWA.
 
@@ -225,7 +229,7 @@ anotarla aquí con fecha.
 
 TanStack Router file-based en `src/routes/` → `routeTree.gen.ts` (generado).
 
-- **Públicas:** `/register`, `/login` (sin nav; redirigen a `/` si hay JWT).
+- **Públicas:** `/register`, `/login`, `/recuperar` (sin nav; redirigen a `/` si hay JWT).
 - **Protegidas (rol `client`, layout `_authenticated` + AppShell):**
   - `/` — Hoy: sesión del día, racha, CTA al detalle de sesión.
   - `/plan` — plan asignado (lectura); preview drawer móvil / split `md+`.
@@ -247,7 +251,7 @@ Nav de 6 items (C13): Hoy, Plan, Historial, Progreso, Comunidades, Perfil.
 ## 8. Hitos
 
 1. **Base** — template limpio, providers, rutas, shell, marca. → *hecho*
-2. **Auth** — gateway client, AuthProvider, `/login`, `/register`, guards. → *hecho*
+2. **Auth** — gateway client, AuthProvider, `/login`, `/register`, `/recuperar`, guards. → *hecho*
 3. **Dominio** — `types/` + Zod auth; mock para plan/sesiones. → *parcial*
 4. **Lectura** — `/` y `/plan` contra el gateway. → *pendiente* (UI con mock)
 5. **Escritura** — player que **persiste series** vía gateway. → *pendiente*

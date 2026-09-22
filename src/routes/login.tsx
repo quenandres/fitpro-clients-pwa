@@ -12,7 +12,8 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AppShell } from '@/components/AppShell'
-import { mensajeDeError } from '@/lib/gateway/errors'
+import { takeAuthHashError } from '@/lib/gateway/client'
+import { mensajeDeError, mensajeEnlaceCaducado } from '@/lib/gateway/errors'
 import { rolPermitidoEnApp } from '@/lib/gateway/schemas'
 import { useAuth } from '@/providers/auth-provider'
 
@@ -40,9 +41,12 @@ function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(() => {
     if (typeof sessionStorage === 'undefined') return null
-    if (sessionStorage.getItem('fitpro_auth_motivo') !== 'rol') return null
-    sessionStorage.removeItem('fitpro_auth_motivo')
-    return 'Esta app no está disponible para este tipo de cuenta.'
+    if (sessionStorage.getItem('fitpro_auth_motivo') === 'rol') {
+      sessionStorage.removeItem('fitpro_auth_motivo')
+      return 'Esta app no está disponible para este tipo de cuenta.'
+    }
+    if (takeAuthHashError()) return mensajeEnlaceCaducado()
+    return null
   })
   const [loading, setLoading] = useState(false)
 
@@ -96,11 +100,25 @@ function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="h-11 text-base"
                 />
+                <Link
+                  to="/recuperar"
+                  className="text-sm text-primary underline-offset-4 hover:underline"
+                >
+                  Olvidé mi contraseña
+                </Link>
               </div>
               {error && (
-                <p className="text-sm text-destructive" role="alert">
-                  {error}
-                </p>
+                <div className="flex flex-col gap-1" role="alert">
+                  <p className="text-sm text-destructive">{error}</p>
+                  {error === mensajeEnlaceCaducado() && (
+                    <Link
+                      to="/recuperar"
+                      className="text-sm text-primary underline-offset-4 hover:underline"
+                    >
+                      Pedir un código ahora
+                    </Link>
+                  )}
+                </div>
               )}
               <Button
                 type="submit"
