@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as MockdataRouteImport } from './routes/mockdata'
 import { Route as RecuperarRouteImport } from './routes/recuperar'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
@@ -37,6 +38,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MockdataRoute = MockdataRouteImport.update({
+  id: '/mockdata',
+  path: '/mockdata',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RecuperarRoute = RecuperarRouteImport.update({
@@ -144,6 +150,7 @@ const AuthenticatedComunidadesComunidadIdEventosEventoIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
+  '/mockdata': typeof MockdataRoute
   '/recuperar': typeof RecuperarRoute
   '/register': typeof RegisterRoute
   '/historial': typeof AuthenticatedHistorialRouteWithChildren
@@ -164,6 +171,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/mockdata': typeof MockdataRoute
   '/recuperar': typeof RecuperarRoute
   '/register': typeof RegisterRoute
   '/historial': typeof AuthenticatedHistorialRouteWithChildren
@@ -185,6 +193,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/mockdata': typeof MockdataRoute
   '/recuperar': typeof RecuperarRoute
   '/register': typeof RegisterRoute
   '/_authenticated/historial': typeof AuthenticatedHistorialRouteWithChildren
@@ -209,6 +218,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/mockdata'
     | '/recuperar'
     | '/register'
     | '/historial'
@@ -229,6 +239,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/mockdata'
     | '/recuperar'
     | '/register'
     | '/historial'
@@ -249,6 +260,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authenticated'
     | '/login'
+    | '/mockdata'
     | '/recuperar'
     | '/register'
     | '/_authenticated/historial'
@@ -272,6 +284,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  MockdataRoute: typeof MockdataRoute
   RecuperarRoute: typeof RecuperarRoute
   RegisterRoute: typeof RegisterRoute
 }
@@ -290,6 +303,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mockdata': {
+      id: '/mockdata'
+      path: '/mockdata'
+      fullPath: '/mockdata'
+      preLoaderRoute: typeof MockdataRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/recuperar': {
@@ -523,6 +543,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  MockdataRoute: MockdataRoute,
   RecuperarRoute: RecuperarRoute,
   RegisterRoute: RegisterRoute,
 }

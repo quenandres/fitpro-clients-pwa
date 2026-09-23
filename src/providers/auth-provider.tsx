@@ -21,6 +21,10 @@ import {
   rememberAuthLinkError,
 } from '@/lib/gateway/client'
 import { rolPermitidoEnApp, type UsuarioGateway } from '@/lib/gateway/schemas'
+import {
+  DEMO_CLIENT_USER,
+  isMockMode,
+} from '@/lib/mock-mode'
 
 export type AuthState = {
   user: UsuarioGateway | null
@@ -48,6 +52,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   const refreshUser = useCallback(async () => {
+    if (isMockMode()) {
+      setUser(DEMO_CLIENT_USER)
+      return
+    }
     const token = getAccessToken()
     if (!token) {
       setUser(null)
@@ -95,6 +103,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (email: string, password: string) => {
+      if (isMockMode()) {
+        setUser(DEMO_CLIENT_USER)
+        queryClient.clear()
+        return
+      }
       await gatewayLogin(email, password)
       const u = await getUser()
       if (!rolPermitidoEnApp(u.role)) {
@@ -109,6 +122,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = useCallback(
     async (email: string, password: string) => {
+      if (isMockMode()) {
+        setUser(DEMO_CLIENT_USER)
+        queryClient.clear()
+        return { needsEmailConfirmation: false }
+      }
       const { needsEmailConfirmation, tokens } = await gatewaySignup(
         email,
         password,
@@ -125,6 +143,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetPassword = useCallback(
     async (email: string, token: string, password: string) => {
+      if (isMockMode()) {
+        setUser(DEMO_CLIENT_USER)
+        queryClient.clear()
+        return
+      }
       await gatewayResetPassword(email, token, password)
       const u = await getUser()
       if (!rolPermitidoEnApp(u.role)) {
@@ -138,6 +161,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   const logout = useCallback(async () => {
+    if (isMockMode()) {
+      clearTokens()
+      setUser(DEMO_CLIENT_USER)
+      queryClient.clear()
+      return
+    }
     try {
       await gatewayLogout()
     } catch {

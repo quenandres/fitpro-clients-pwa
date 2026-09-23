@@ -23,6 +23,7 @@ import { useSesionHoy } from '@/lib/gateway/hooks'
 import { HISTORIAL_SEARCH_DEFAULT } from '@/lib/routes/historialSearch'
 import { useAuth } from '@/providers/auth-provider'
 import { progresoHoyMock, type PeriodoHoy } from '@/lib/mock/datos'
+import { isMockMode } from '@/lib/mock-mode'
 import type { Sesion } from '@/types/dominio'
 
 export const Route = createFileRoute('/_authenticated/')({
@@ -570,7 +571,9 @@ function HoyPage() {
           sesion_completada_hoy={sesion_completada_hoy}
         />
       ) : null}
-      <PrototypeBanner mensaje="Las cifras de progreso siguen siendo de ejemplo hasta derivarlas del historial real." />
+      {!isMockMode() ? (
+        <PrototypeBanner mensaje="Las cifras de progreso siguen siendo de ejemplo hasta derivarlas del historial real." />
+      ) : null}
       <section className="space-y-4">
         <div>
           <h2 className="text-lg font-semibold">Tu progreso</h2>

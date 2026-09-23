@@ -9,6 +9,8 @@ import {
   type MiembroComunidadGateway,
   type PostComunidadGateway,
 } from '@/lib/gateway/schemas'
+import { isMockMode } from '@/lib/mock-mode'
+import * as demo from '@/lib/mock/comunidades-demo'
 import type { RolComunidad, TipoPost } from '@/types/comunidad'
 import { z } from 'zod'
 
@@ -18,6 +20,7 @@ export async function fetchComunidades(params: {
   tab?: TabExplorar
   q?: string
 }): Promise<ComunidadGateway[]> {
+  if (isMockMode()) return demo.demoFetchComunidades(params)
   const search = new URLSearchParams()
   if (params.tab) search.set('tab', params.tab)
   if (params.q?.trim()) search.set('q', params.q.trim())
@@ -29,11 +32,13 @@ export async function fetchComunidades(params: {
 }
 
 export async function fetchComunidad(id: string): Promise<ComunidadGateway> {
+  if (isMockMode()) return demo.demoFetchComunidad(id)
   const data = await gatewayFetch<unknown>(`/api/comunidades/${id}`)
   return comunidadSchema.parse(data)
 }
 
 export async function joinComunidad(id: string): Promise<ComunidadGateway> {
+  if (isMockMode()) return demo.demoJoinComunidad(id)
   const data = await gatewayFetch<unknown>(`/api/comunidades/${id}/unirse`, {
     method: 'POST',
   })
@@ -41,6 +46,10 @@ export async function joinComunidad(id: string): Promise<ComunidadGateway> {
 }
 
 export async function leaveComunidad(id: string): Promise<void> {
+  if (isMockMode()) {
+    demo.demoLeaveComunidad(id)
+    return
+  }
   await gatewayFetch<void>(`/api/comunidades/${id}/salir`, {
     method: 'DELETE',
   })
@@ -49,6 +58,7 @@ export async function leaveComunidad(id: string): Promise<void> {
 export async function fetchPublicaciones(
   comunidadId: string,
 ): Promise<PostComunidadGateway[]> {
+  if (isMockMode()) return demo.demoFetchPublicaciones(comunidadId)
   const data = await gatewayFetch<unknown>(
     `/api/comunidades/${comunidadId}/publicaciones`,
   )
@@ -59,6 +69,7 @@ export async function createPublicacion(
   comunidadId: string,
   body: { texto: string; tipo: TipoPost },
 ): Promise<PostComunidadGateway> {
+  if (isMockMode()) return demo.demoCreatePublicacion(comunidadId, body)
   const data = await gatewayFetch<unknown>(
     `/api/comunidades/${comunidadId}/publicaciones`,
     {
@@ -74,6 +85,7 @@ export async function toggleReaccion(
   postId: string,
   tipo: 'like' = 'like',
 ): Promise<PostComunidadGateway> {
+  if (isMockMode()) return demo.demoToggleReaccion(comunidadId, postId)
   const data = await gatewayFetch<unknown>(
     `/api/comunidades/${comunidadId}/publicaciones/${postId}/reaccion`,
     {
@@ -89,6 +101,7 @@ export async function createComentario(
   postId: string,
   texto: string,
 ): Promise<PostComunidadGateway> {
+  if (isMockMode()) return demo.demoCreateComentario(comunidadId, postId, texto)
   const data = await gatewayFetch<unknown>(
     `/api/comunidades/${comunidadId}/publicaciones/${postId}/comentarios`,
     {
@@ -104,6 +117,7 @@ export async function updatePublicacion(
   postId: string,
   body: { fijado?: boolean },
 ): Promise<PostComunidadGateway> {
+  if (isMockMode()) return demo.demoUpdatePublicacion(comunidadId, postId, body)
   const data = await gatewayFetch<unknown>(
     `/api/comunidades/${comunidadId}/publicaciones/${postId}`,
     {
@@ -118,6 +132,10 @@ export async function deletePublicacion(
   comunidadId: string,
   postId: string,
 ): Promise<void> {
+  if (isMockMode()) {
+    demo.demoDeletePublicacion(comunidadId, postId)
+    return
+  }
   await gatewayFetch<void>(
     `/api/comunidades/${comunidadId}/publicaciones/${postId}`,
     { method: 'DELETE' },
@@ -128,6 +146,7 @@ export async function fetchEventos(
   comunidadId: string,
   estado: 'proximos' | 'pasados' = 'proximos',
 ): Promise<EventoComunidadGateway[]> {
+  if (isMockMode()) return demo.demoFetchEventos(comunidadId, estado)
   const data = await gatewayFetch<unknown>(
     `/api/comunidades/${comunidadId}/eventos?estado=${estado}`,
   )
@@ -138,6 +157,7 @@ export async function fetchEvento(
   comunidadId: string,
   eventoId: string,
 ): Promise<EventoComunidadGateway> {
+  if (isMockMode()) return demo.demoFetchEvento(comunidadId, eventoId)
   const data = await gatewayFetch<unknown>(
     `/api/comunidades/${comunidadId}/eventos/${eventoId}`,
   )
@@ -155,6 +175,7 @@ export async function createEvento(
     cupoMax?: number | null
   },
 ): Promise<EventoComunidadGateway> {
+  if (isMockMode()) return demo.demoCreateEvento(comunidadId, body)
   const data = await gatewayFetch<unknown>(
     `/api/comunidades/${comunidadId}/eventos`,
     {
@@ -169,6 +190,10 @@ export async function deleteEvento(
   comunidadId: string,
   eventoId: string,
 ): Promise<void> {
+  if (isMockMode()) {
+    demo.demoDeleteEvento(comunidadId, eventoId)
+    return
+  }
   await gatewayFetch<void>(
     `/api/comunidades/${comunidadId}/eventos/${eventoId}`,
     { method: 'DELETE' },
@@ -179,6 +204,7 @@ export async function confirmarEvento(
   comunidadId: string,
   eventoId: string,
 ): Promise<EventoComunidadGateway> {
+  if (isMockMode()) return demo.demoConfirmarEvento(comunidadId, eventoId)
   const data = await gatewayFetch<unknown>(
     `/api/comunidades/${comunidadId}/eventos/${eventoId}/confirmar`,
     { method: 'POST' },
@@ -190,6 +216,7 @@ export async function cancelarEvento(
   comunidadId: string,
   eventoId: string,
 ): Promise<EventoComunidadGateway> {
+  if (isMockMode()) return demo.demoCancelarEvento(comunidadId, eventoId)
   const data = await gatewayFetch<unknown>(
     `/api/comunidades/${comunidadId}/eventos/${eventoId}/confirmar`,
     { method: 'DELETE' },
@@ -200,6 +227,7 @@ export async function cancelarEvento(
 export async function fetchMiembros(
   comunidadId: string,
 ): Promise<MiembroComunidadGateway[]> {
+  if (isMockMode()) return demo.demoFetchMiembros(comunidadId)
   const data = await gatewayFetch<unknown>(
     `/api/comunidades/${comunidadId}/miembros`,
   )
@@ -211,6 +239,7 @@ export async function updateMiembro(
   userId: string,
   body: { rol?: RolComunidad; suspendido?: boolean },
 ): Promise<MiembroComunidadGateway> {
+  if (isMockMode()) return demo.demoUpdateMiembro(comunidadId, userId, body)
   const data = await gatewayFetch<unknown>(
     `/api/comunidades/${comunidadId}/miembros/${userId}`,
     {
@@ -225,6 +254,10 @@ export async function removeMiembro(
   comunidadId: string,
   userId: string,
 ): Promise<void> {
+  if (isMockMode()) {
+    demo.demoRemoveMiembro(comunidadId, userId)
+    return
+  }
   await gatewayFetch<void>(
     `/api/comunidades/${comunidadId}/miembros/${userId}`,
     { method: 'DELETE' },

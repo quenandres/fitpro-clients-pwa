@@ -1,4 +1,5 @@
 import { Link, useRouterState } from '@tanstack/react-router'
+import { isMockMode } from '@/lib/mock-mode'
 import {
   CalendarDays,
   History,
@@ -33,7 +34,7 @@ function navActiva(pathname: string, to: string) {
   return pathname === to || pathname.startsWith(`${to}/`)
 }
 
-const ROUTES_SIN_NAV = ['/login', '/register']
+const ROUTES_SIN_NAV = ['/login', '/register', '/recuperar', '/mockdata']
 const ROUTES_PLAYER = /^\/sesion\/[^/]+\/?$/
 
 type AppShellProps = {
@@ -74,6 +75,7 @@ function NavLink({
 
 export function AppShell({ children, hideNav = false }: AppShellProps) {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const mockActivo = isMockMode()
   const ocultarNav =
     hideNav ||
     ROUTES_SIN_NAV.includes(pathname) ||
@@ -81,6 +83,15 @@ export function AppShell({ children, hideNav = false }: AppShellProps) {
 
   return (
     <div className="flex min-h-dvh flex-col bg-background">
+      {mockActivo && !ROUTES_SIN_NAV.includes(pathname) && (
+        <div className="border-b border-primary/20 bg-primary/5 px-4 py-1.5 text-center text-xs text-muted-foreground">
+          <Link to="/mockdata" className="font-medium text-primary underline-offset-2 hover:underline">
+            Modo demo
+          </Link>
+          {' · '}
+          Datos de demostración
+        </div>
+      )}
       {!ocultarNav && (
         <header className="sticky top-0 z-50 hidden border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80 md:block">
           <div className="mx-auto flex h-16 max-w-6xl items-center justify-center gap-2 px-4">
