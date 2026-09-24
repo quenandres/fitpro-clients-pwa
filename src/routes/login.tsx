@@ -12,6 +12,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AppShell } from '@/components/AppShell'
+import { AuthErrorAnimado } from '@/components/motion/DashboardMotion'
 import { takeAuthHashError } from '@/lib/gateway/client'
 import { mensajeDeError, mensajeEnlaceCaducado } from '@/lib/gateway/errors'
 import { rolPermitidoEnApp } from '@/lib/gateway/schemas'
@@ -107,19 +108,16 @@ function LoginPage() {
                   Olvidé mi contraseña
                 </Link>
               </div>
-              {error && (
-                <div className="flex flex-col gap-1" role="alert">
-                  <p className="text-sm text-destructive">{error}</p>
-                  {error === mensajeEnlaceCaducado() && (
-                    <Link
-                      to="/recuperar"
-                      className="text-sm text-primary underline-offset-4 hover:underline"
-                    >
-                      Pedir un código ahora
-                    </Link>
-                  )}
-                </div>
-              )}
+              <AuthErrorAnimado error={error}>
+                {error === mensajeEnlaceCaducado() ? (
+                  <Link
+                    to="/recuperar"
+                    className="text-sm text-primary underline-offset-4 hover:underline"
+                  >
+                    Pedir un código ahora
+                  </Link>
+                ) : null}
+              </AuthErrorAnimado>
               <Button
                 type="submit"
                 size="lg"

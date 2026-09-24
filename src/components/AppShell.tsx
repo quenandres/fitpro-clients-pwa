@@ -8,6 +8,8 @@ import {
   User,
   Users,
 } from 'lucide-react'
+import { NavHighlightBar } from '@/components/shell/NavHighlight'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
@@ -42,39 +44,10 @@ type AppShellProps = {
   hideNav?: boolean
 }
 
-function NavLink({
-  to,
-  label,
-  icon: Icon,
-  active,
-  className,
-}: {
-  to: string
-  label: string
-  icon: typeof Home
-  active: boolean
-  className?: string
-}) {
-  return (
-    <Link
-      to={to}
-      className={cn(
-        'flex min-h-12 min-w-12 flex-col items-center justify-center gap-1 rounded-lg px-3 py-2 text-xs font-medium transition-colors',
-        active
-          ? 'bg-primary/10 text-primary'
-          : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-        className,
-      )}
-      aria-current={active ? 'page' : undefined}
-    >
-      <Icon className="size-5" aria-hidden />
-      <span>{label}</span>
-    </Link>
-  )
-}
-
 export function AppShell({ children, hideNav = false }: AppShellProps) {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const navActivaTo =
+    NAV_ITEMS.find(({ to }) => navActiva(pathname, to))?.to ?? '/'
   const mockActivo = isMockMode()
   const ocultarNav =
     hideNav ||
@@ -93,18 +66,32 @@ export function AppShell({ children, hideNav = false }: AppShellProps) {
         </div>
       )}
       {!ocultarNav && (
+        <div
+          className={cn(
+            'fixed right-3 z-[60] md:hidden',
+            mockActivo && !ROUTES_SIN_NAV.includes(pathname) ? 'top-11' : 'top-3',
+          )}
+          style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        >
+          <ThemeToggle />
+        </div>
+      )}
+
+      {!ocultarNav && (
         <header className="sticky top-0 z-50 hidden border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80 md:block">
-          <div className="mx-auto flex h-16 max-w-6xl items-center justify-center gap-2 px-4">
-            {NAV_ITEMS.map(({ to, label, icon }) => (
-              <NavLink
-                key={to}
-                to={to}
-                label={label}
-                icon={icon}
-                active={navActiva(pathname, to)}
-                className="min-h-11 flex-row gap-2 px-4 text-sm"
-              />
-            ))}
+          <div className="relative">
+            <div className="absolute right-4 top-1/2 z-10 -translate-y-1/2">
+              <ThemeToggle />
+            </div>
+            <NavHighlightBar
+              items={NAV_ITEMS.map(({ to, label, icon }) => ({
+                to,
+                label,
+                icon,
+              }))}
+              activeTo={navActivaTo}
+              layout="top"
+            />
           </div>
         </header>
       )}
@@ -124,17 +111,15 @@ export function AppShell({ children, hideNav = false }: AppShellProps) {
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
           aria-label="Navegación principal"
         >
-          <div className="mx-auto flex max-w-6xl items-stretch justify-around px-2 py-1">
-            {NAV_ITEMS.map(({ to, label, shortLabel, icon }) => (
-              <NavLink
-                key={to}
-                to={to}
-                label={shortLabel ?? label}
-                icon={icon}
-                active={navActiva(pathname, to)}
-              />
-            ))}
-          </div>
+          <NavHighlightBar
+            items={NAV_ITEMS.map(({ to, label, shortLabel, icon }) => ({
+              to,
+              label: shortLabel ?? label,
+              icon,
+            }))}
+            activeTo={navActivaTo}
+            layout="bottom"
+          />
         </nav>
       )}
     </div>

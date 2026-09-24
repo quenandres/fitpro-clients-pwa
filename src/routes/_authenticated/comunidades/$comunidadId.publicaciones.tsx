@@ -1,5 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
+import {
+  AvisoComunidadAnimado,
+  ListaItemsAnimada,
+} from '@/components/comunidades/ComunidadesMotion'
 import { PenLine } from 'lucide-react'
 import { PostCard } from '@/components/comunidades/PostCard'
 import { Button } from '@/components/ui/button'
@@ -27,7 +31,10 @@ import {
 } from '@/lib/gateway/comunidades-hooks'
 import { useAuth } from '@/providers/auth-provider'
 import type { TipoPost } from '@/types/comunidad'
-import { cn } from '@/lib/utils'
+import {
+  CargaCrossfade,
+  SelectorTabsAnimado,
+} from '@/components/motion/DashboardMotion'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute(
@@ -77,6 +84,14 @@ function ComunidadPublicacionesPage() {
     null,
   )
 
+  const tiposPublicacion = useMemo(() => {
+    const base = TIPOS_POST.map(({ id, label }) => ({ id, label }))
+    if (puedeModerar) {
+      return [...base, { id: 'anuncio' as TipoPost, label: 'Anuncio' }]
+    }
+    return base
+  }, [puedeModerar])
+
   function publicar() {
     const limpio = texto.trim()
     if (!limpio) return
@@ -93,10 +108,6 @@ function ComunidadPublicacionesPage() {
           toast.error('No pudimos publicar. Inténtalo de nuevo.'),
       },
     )
-  }
-
-  if (isLoading) {
-    return <Skeleton className="h-48 rounded-xl" />
   }
 
   if (isError) {
@@ -125,93 +136,98 @@ function ComunidadPublicacionesPage() {
         )}
       </div>
 
-      {!esMiembro && (
+      <AvisoComunidadAnimado visible={!esMiembro}>
         <p className="rounded-xl border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
           Únete a la comunidad para publicar en el feed.
         </p>
-      )}
+      </AvisoComunidadAnimado>
 
-      {suspendido && esMiembro && (
+      <AvisoComunidadAnimado visible={suspendido && esMiembro}>
         <p className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           Tu cuenta está suspendida. No puedes publicar ni comentar.
         </p>
-      )}
+      </AvisoComunidadAnimado>
 
-      {posts.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Sé el primero en publicar algo.
-        </p>
-      ) : (
-        <div className="space-y-3">
-          {posts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              autorNombre={post.autorNombre ?? 'Miembro'}
-              autorIniciales={post.autorIniciales ?? '?'}
-              liked={post.liked ?? false}
-              esPropio={post.autorId === user?.id}
-              miRol={comunidad?.miRol}
-              suspendido={suspendido}
-              esMiembro={esMiembro}
-              likePending={likePendingId === post.id}
-              comentarioPending={comentarioPendingId === post.id}
-              onToggleLike={() => {
-                setLikePendingId(post.id)
-                toggleLike.mutate(post.id, {
-                  onSettled: () => setLikePendingId(null),
-                  onError: () =>
-                    toast.error('No pudimos registrar tu reacción.'),
-                })
-              }}
-              onComentar={
-                puedeParticipar
-                  ? (textoComentario) => {
-                      setComentarioPendingId(post.id)
-                      createComentario.mutate(
-                        { postId: post.id, texto: textoComentario },
-                        {
-                          onSettled: () => setComentarioPendingId(null),
-                          onSuccess: () => toast.success('Comentario publicado'),
+      <CargaCrossfade
+        loading={isLoading}
+        skeleton={<Skeleton className="h-48 rounded-xl" />}
+      >
+        {posts.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Sé el primero en publicar algo.
+          </p>
+        ) : (
+          <ListaItemsAnimada
+            items={posts}
+            renderItem={(post) => (
+              <PostCard
+                post={post}
+                autorNombre={post.autorNombre ?? 'Miembro'}
+                autorIniciales={post.autorIniciales ?? '?'}
+                liked={post.liked ?? false}
+                esPropio={post.autorId === user?.id}
+                miRol={comunidad?.miRol}
+                suspendido={suspendido}
+                esMiembro={esMiembro}
+                likePending={likePendingId === post.id}
+                comentarioPending={comentarioPendingId === post.id}
+                onToggleLike={() => {
+                  setLikePendingId(post.id)
+                  toggleLike.mutate(post.id, {
+                    onSettled: () => setLikePendingId(null),
+                    onError: () =>
+                      toast.error('No pudimos registrar tu reacción.'),
+                  })
+                }}
+                onComentar={
+                  puedeParticipar
+                    ? (textoComentario) => {
+                        setComentarioPendingId(post.id)
+                        createComentario.mutate(
+                          { postId: post.id, texto: textoComentario },
+                          {
+                            onSettled: () => setComentarioPendingId(null),
+                            onSuccess: () => toast.success('Comentario publicado'),
+                            onError: () =>
+                              toast.error('No pudimos publicar el comentario.'),
+                          },
+                        )
+                      }
+                    : undefined
+                }
+                onFijar={
+                  puedeModerar
+                    ? () =>
+                        updatePublicacion.mutate(
+                          { postId: post.id, fijado: !post.fijado },
+                          {
+                            onSuccess: () =>
+                              toast.success(
+                                post.fijado
+                                  ? 'Publicación desfijada'
+                                  : 'Publicación fijada',
+                              ),
+                            onError: () =>
+                              toast.error('No pudimos actualizar la publicación.'),
+                          },
+                        )
+                    : undefined
+                }
+                onEliminar={
+                  puedeModerar || post.autorId === user?.id
+                    ? () =>
+                        deletePublicacion.mutate(post.id, {
+                          onSuccess: () => toast.success('Publicación eliminada'),
                           onError: () =>
-                            toast.error('No pudimos publicar el comentario.'),
-                        },
-                      )
-                    }
-                  : undefined
-              }
-              onFijar={
-                puedeModerar
-                  ? () =>
-                      updatePublicacion.mutate(
-                        { postId: post.id, fijado: !post.fijado },
-                        {
-                          onSuccess: () =>
-                            toast.success(
-                              post.fijado
-                                ? 'Publicación desfijada'
-                                : 'Publicación fijada',
-                            ),
-                          onError: () =>
-                            toast.error('No pudimos actualizar la publicación.'),
-                        },
-                      )
-                  : undefined
-              }
-              onEliminar={
-                puedeModerar || post.autorId === user?.id
-                  ? () =>
-                      deletePublicacion.mutate(post.id, {
-                        onSuccess: () => toast.success('Publicación eliminada'),
-                        onError: () =>
-                          toast.error('No pudimos eliminar la publicación.'),
-                      })
-                  : undefined
-              }
-            />
-          ))}
-        </div>
-      )}
+                            toast.error('No pudimos eliminar la publicación.'),
+                        })
+                    : undefined
+                }
+              />
+            )}
+          />
+        )}
+      </CargaCrossfade>
 
       <Sheet open={sheetAbierto} onOpenChange={setSheetAbierto}>
         <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto">
@@ -225,43 +241,14 @@ function ComunidadPublicacionesPage() {
           <div className="space-y-4 px-4 py-2">
             <div className="space-y-2">
               <Label>Tipo</Label>
-              <div
-                role="radiogroup"
-                aria-label="Tipo de publicación"
-                className="grid grid-cols-3 gap-1 rounded-full bg-secondary p-1"
-              >
-                {TIPOS_POST.map(({ id, label }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    role="radio"
-                    aria-checked={tipo === id}
-                    onClick={() => setTipo(id)}
-                    className={cn(
-                      'min-h-11 rounded-full text-xs font-semibold transition-colors',
-                      tipo === id
-                        ? 'bg-background text-foreground shadow-sm'
-                        : 'text-muted-foreground',
-                    )}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              {puedeModerar && (
-                <button
-                  type="button"
-                  className={cn(
-                    'mt-2 min-h-11 w-full rounded-full text-xs font-semibold transition-colors',
-                    tipo === 'anuncio'
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground',
-                  )}
-                  onClick={() => setTipo('anuncio')}
-                >
-                  Anuncio (moderador)
-                </button>
-              )}
+              <SelectorTabsAnimado
+                items={tiposPublicacion}
+                value={tipo}
+                onChange={setTipo}
+                ariaLabel="Tipo de publicación"
+                columnas={puedeModerar ? 4 : 3}
+                classNameTab="min-h-11 px-1 text-[11px]"
+              />
             </div>
 
             <div className="space-y-2">

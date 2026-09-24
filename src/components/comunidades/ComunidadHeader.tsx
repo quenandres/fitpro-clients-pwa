@@ -10,6 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { AvisoComunidadAnimado } from '@/components/comunidades/ComunidadesMotion'
+import { MetricaContador } from '@/components/motion/DashboardMotion'
 import { ETIQUETAS_CATEGORIA } from '@/lib/comunidades/display'
 import type { Comunidad } from '@/types/comunidad'
 
@@ -77,17 +79,20 @@ export function ComunidadHeader({
               <Badge variant="outline">
                 {ETIQUETAS_CATEGORIA[comunidad.categoria]}
               </Badge>
-              <span className="inline-flex items-center gap-1">
+              <span className="inline-flex items-center gap-1 tabular-nums">
                 <Users className="size-4" aria-hidden />
-                {comunidad.miembrosCount} miembros
+                <MetricaContador valor={comunidad.miembrosCount} className="inline" />{' '}
+                miembros
               </span>
-              <span className="inline-flex items-center gap-1">
+              <span className="inline-flex items-center gap-1 tabular-nums">
                 <FileText className="size-4" aria-hidden />
-                {comunidad.postsCount} publicaciones
+                <MetricaContador valor={comunidad.postsCount} className="inline" />{' '}
+                publicaciones
               </span>
-              <span className="inline-flex items-center gap-1">
+              <span className="inline-flex items-center gap-1 tabular-nums">
                 <CalendarDays className="size-4" aria-hidden />
-                {comunidad.eventosCount} eventos
+                <MetricaContador valor={comunidad.eventosCount} className="inline" />{' '}
+                eventos
               </span>
             </div>
           </div>
@@ -116,12 +121,12 @@ export function ComunidadHeader({
           )}
         </div>
 
-        {suspendido && esMiembro && (
+        <AvisoComunidadAnimado visible={suspendido && esMiembro}>
           <p className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             Tu cuenta está suspendida en esta comunidad. No puedes publicar,
             comentar ni confirmar asistencia a eventos.
           </p>
-        )}
+        </AvisoComunidadAnimado>
       </section>
 
       <Dialog open={confirmarSalir} onOpenChange={setConfirmarSalir}>

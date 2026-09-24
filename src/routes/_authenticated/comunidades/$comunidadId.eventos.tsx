@@ -1,6 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
+import {
+  AvisoComunidadAnimado,
+  ListaItemsAnimada,
+} from '@/components/comunidades/ComunidadesMotion'
 import { EventoCard } from '@/components/comunidades/EventoCard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,7 +27,11 @@ import {
   useCreateEvento,
   useDeleteEvento,
 } from '@/lib/gateway/comunidades-hooks'
-import { cn } from '@/lib/utils'
+import {
+  CargaCrossfade,
+  PanelConAutoHeight,
+  SelectorTabsAnimado,
+} from '@/components/motion/DashboardMotion'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute(
@@ -102,106 +110,95 @@ function ComunidadEventosPage() {
         )}
       </div>
 
-      <div
-        role="tablist"
-        aria-label="Filtrar eventos"
-        className="grid grid-cols-2 gap-1 rounded-full bg-secondary p-1"
-      >
-        {(
-          [
-            { id: 'proximos' as const, label: 'Próximos' },
-            { id: 'pasados' as const, label: 'Pasados' },
-          ] as const
-        ).map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={tab === id}
-            onClick={() => setTab(id)}
-            className={cn(
-              'min-h-11 rounded-full text-xs font-semibold transition-colors',
-              tab === id
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <SelectorTabsAnimado
+        items={[
+          { id: 'proximos' as const, label: 'Próximos' },
+          { id: 'pasados' as const, label: 'Pasados' },
+        ]}
+        value={tab}
+        onChange={setTab}
+        ariaLabel="Filtrar eventos"
+        columnas={2}
+      />
 
-      {!esMiembro && tab === 'proximos' && (
+      <AvisoComunidadAnimado visible={!esMiembro && tab === 'proximos'}>
         <p className="rounded-xl border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
           Únete a la comunidad para confirmar tu participación en eventos.
         </p>
-      )}
+      </AvisoComunidadAnimado>
 
-      {suspendido && esMiembro && tab === 'proximos' && (
+      <AvisoComunidadAnimado visible={suspendido && esMiembro && tab === 'proximos'}>
         <p className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           Tu cuenta está suspendida. No puedes confirmar asistencia a eventos.
         </p>
-      )}
+      </AvisoComunidadAnimado>
 
-      {isLoading ? (
-        <Skeleton className="h-32 rounded-xl" />
-      ) : isError ? (
+      {isError ? (
         <p className="rounded-xl border border-destructive/30 px-4 py-8 text-center text-sm text-destructive">
           No pudimos cargar los eventos.{' '}
           <button type="button" className="underline" onClick={() => void refetch()}>
             Reintentar
           </button>
         </p>
-      ) : lista.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          {tab === 'proximos'
-            ? 'No hay eventos próximos.'
-            : 'No hay eventos pasados.'}
-        </p>
       ) : (
-        <div className="space-y-3">
-          {lista.map((evento) => (
-            <EventoCard
-              key={evento.id}
-              evento={evento}
-              comunidadId={comunidadId}
-              esMiembro={esMiembro}
-              suspendido={suspendido}
-              puedeModerar={puedeModerar}
-              pasado={tab === 'pasados'}
-              estadoParticipacion={evento.estadoParticipacion ?? 'ninguno'}
-              confirmarPending={rsvpPendingId === evento.id}
-              onConfirmar={() => {
-                setRsvpPendingId(evento.id)
-                confirmar.mutate(evento.id, {
-                  onSettled: () => setRsvpPendingId(null),
-                  onSuccess: () => toast.success('Participación confirmada'),
-                  onError: () =>
-                    toast.error('No pudimos confirmar tu participación.'),
-                })
-              }}
-              onCancelar={() => {
-                setRsvpPendingId(evento.id)
-                cancelar.mutate(evento.id, {
-                  onSettled: () => setRsvpPendingId(null),
-                  onSuccess: () => toast.success('Participación cancelada'),
-                  onError: () =>
-                    toast.error('No pudimos cancelar tu participación.'),
-                })
-              }}
-              onEliminar={
-                puedeModerar
-                  ? () =>
-                      deleteEvento.mutate(evento.id, {
-                        onSuccess: () => toast.success('Evento eliminado'),
+        <PanelConAutoHeight deps={[tab, lista.length, isLoading]}>
+          <CargaCrossfade
+            loading={isLoading}
+            skeleton={<Skeleton className="h-32 rounded-xl" />}
+          >
+            {lista.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {tab === 'proximos'
+                  ? 'No hay eventos próximos.'
+                  : 'No hay eventos pasados.'}
+              </p>
+            ) : (
+              <ListaItemsAnimada
+                items={lista}
+                renderItem={(evento) => (
+                  <EventoCard
+                    evento={evento}
+                    comunidadId={comunidadId}
+                    esMiembro={esMiembro}
+                    suspendido={suspendido}
+                    puedeModerar={puedeModerar}
+                    pasado={tab === 'pasados'}
+                    estadoParticipacion={evento.estadoParticipacion ?? 'ninguno'}
+                    confirmarPending={rsvpPendingId === evento.id}
+                    onConfirmar={() => {
+                      setRsvpPendingId(evento.id)
+                      confirmar.mutate(evento.id, {
+                        onSettled: () => setRsvpPendingId(null),
+                        onSuccess: () => toast.success('Participación confirmada'),
                         onError: () =>
-                          toast.error('No pudimos eliminar el evento.'),
+                          toast.error('No pudimos confirmar tu participación.'),
                       })
-                  : undefined
-              }
-            />
-          ))}
-        </div>
+                    }}
+                    onCancelar={() => {
+                      setRsvpPendingId(evento.id)
+                      cancelar.mutate(evento.id, {
+                        onSettled: () => setRsvpPendingId(null),
+                        onSuccess: () => toast.success('Participación cancelada'),
+                        onError: () =>
+                          toast.error('No pudimos cancelar tu participación.'),
+                      })
+                    }}
+                    onEliminar={
+                      puedeModerar
+                        ? () =>
+                            deleteEvento.mutate(evento.id, {
+                              onSuccess: () => toast.success('Evento eliminado'),
+                              onError: () =>
+                                toast.error('No pudimos eliminar el evento.'),
+                            })
+                        : undefined
+                    }
+                  />
+                )}
+              />
+            )}
+          </CargaCrossfade>
+        </PanelConAutoHeight>
       )}
 
       <Sheet open={sheetAbierto} onOpenChange={setSheetAbierto}>

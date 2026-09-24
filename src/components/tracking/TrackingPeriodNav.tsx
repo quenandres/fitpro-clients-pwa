@@ -1,12 +1,17 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { SelectorTabsAnimado } from '@/components/motion/DashboardMotion'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 import {
   TRACKING_PERIOD_LABELS,
   type TrackingPeriod,
 } from '@/lib/tracking/utils'
 
-const PERIOD_OPTIONS: TrackingPeriod[] = ['semana', 'mes', 'trimestre', 'anio']
+const PERIOD_OPTIONS = [
+  { id: 'semana' as const, label: TRACKING_PERIOD_LABELS.semana },
+  { id: 'mes' as const, label: TRACKING_PERIOD_LABELS.mes },
+  { id: 'trimestre' as const, label: TRACKING_PERIOD_LABELS.trimestre },
+  { id: 'anio' as const, label: TRACKING_PERIOD_LABELS.anio },
+]
 
 type TrackingPeriodNavProps = {
   period: TrackingPeriod
@@ -25,32 +30,13 @@ export function TrackingPeriodNav({
 }: TrackingPeriodNavProps) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div
-        role="tablist"
-        aria-label="Periodo de actividad"
-        className="grid grid-cols-4 gap-1 rounded-full bg-secondary p-1"
-      >
-        {PERIOD_OPTIONS.map((id) => {
-          const activo = period === id
-          return (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              aria-selected={activo}
-              onClick={() => onPeriodChange(id)}
-              className={cn(
-                'min-h-10 rounded-full px-2 text-xs font-semibold transition-colors',
-                activo
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {TRACKING_PERIOD_LABELS[id]}
-            </button>
-          )
-        })}
-      </div>
+      <SelectorTabsAnimado
+        items={PERIOD_OPTIONS}
+        value={period}
+        onChange={onPeriodChange}
+        ariaLabel="Periodo de actividad"
+        classNameTab="min-h-10 px-2"
+      />
 
       <div className="flex items-center justify-center gap-2">
         <Button

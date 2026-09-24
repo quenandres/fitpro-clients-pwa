@@ -1,6 +1,7 @@
 import { Outlet, createFileRoute, notFound } from '@tanstack/react-router'
 import { ComunidadHeader } from '@/components/comunidades/ComunidadHeader'
 import { ComunidadTabsNav } from '@/components/comunidades/ComunidadTabsNav'
+import { CargaCrossfade } from '@/components/motion/DashboardMotion'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   useComunidad,
@@ -19,20 +20,21 @@ function ComunidadLayout() {
   const joinMutation = useJoinComunidad()
   const leaveMutation = useLeaveComunidad()
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-36 rounded-xl" />
-        <Skeleton className="h-8 w-48" />
-      </div>
-    )
-  }
-
-  if (isError || !comunidad) {
+  if (isError || (!isLoading && !comunidad)) {
     throw notFound()
   }
 
   return (
+    <CargaCrossfade
+      loading={isLoading}
+      skeleton={
+        <div className="space-y-6">
+          <Skeleton className="h-36 rounded-xl" />
+          <Skeleton className="h-8 w-48" />
+        </div>
+      }
+    >
+    {comunidad ? (
     <div className="space-y-6">
       <ComunidadHeader
         comunidad={comunidad}
@@ -64,5 +66,7 @@ function ComunidadLayout() {
 
       <Outlet />
     </div>
+    ) : null}
+    </CargaCrossfade>
   )
 }

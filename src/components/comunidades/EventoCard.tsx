@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { MetricaContador } from '@/components/motion/DashboardMotion'
 import type { EventoComunidad, EstadoParticipacion } from '@/types/comunidad'
 
 type EventoCardProps = {
@@ -90,10 +91,16 @@ export function EventoCard({
             <MapPin className="size-4 shrink-0" aria-hidden />
             {evento.lugar}
           </p>
-          <p className="flex items-center gap-2">
+          <p className="flex items-center gap-2 tabular-nums">
             <Users className="size-4 shrink-0" aria-hidden />
-            {confirmados}
-            {evento.cupoMax !== null ? ` / ${evento.cupoMax}` : ''} participantes
+            <MetricaContador valor={confirmados} className="inline" />
+            {evento.cupoMax !== null ? (
+              <>
+                {' / '}
+                <MetricaContador valor={evento.cupoMax} className="inline" />
+              </>
+            ) : null}{' '}
+            participantes
           </p>
         </div>
 

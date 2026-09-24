@@ -28,7 +28,7 @@ export default defineConfig({
         name: 'GYMApp',
         short_name: 'GYMApp',
         description: 'Plataforma de entrenamiento',
-        theme_color: '#000000',
+        theme_color: '#15803d',
         background_color: '#ffffff',
         display: 'standalone',
         start_url: '/',

@@ -8,7 +8,12 @@ import {
   useComunidadesList,
   useJoinComunidad,
 } from '@/lib/gateway/comunidades-hooks'
-import { cn } from '@/lib/utils'
+import { ListaItemsAnimada } from '@/components/comunidades/ComunidadesMotion'
+import {
+  CargaCrossfade,
+  PanelConAutoHeight,
+  SelectorTabsAnimado,
+} from '@/components/motion/DashboardMotion'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_authenticated/comunidades/')({
@@ -58,74 +63,64 @@ function ComunidadesExplorarPage() {
         />
       </div>
 
-      <div
-        role="tablist"
-        aria-label="Explorar comunidades"
-        className="grid grid-cols-3 gap-1 rounded-full bg-secondary p-1"
-      >
-        {TABS.map(({ id, label }) => {
-          const activo = tab === id
-          return (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              aria-selected={activo}
-              onClick={() => setTab(id)}
-              className={cn(
-                'min-h-11 rounded-full px-1 text-xs font-semibold transition-colors',
-                activo
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {label}
-            </button>
-          )
-        })}
-      </div>
+      <SelectorTabsAnimado
+        items={TABS}
+        value={tab}
+        onChange={setTab}
+        ariaLabel="Explorar comunidades"
+        columnas={3}
+      />
 
-      {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-44 rounded-xl" />
-          ))}
-        </div>
-      ) : isError ? (
+      {isError ? (
         <p className="rounded-xl border border-destructive/30 px-4 py-8 text-center text-sm text-destructive">
           No pudimos cargar las comunidades.{' '}
           <button type="button" className="underline" onClick={() => void refetch()}>
             Reintentar
           </button>
         </p>
-      ) : filtradas.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
-          {tab === 'mis'
-            ? 'Aún no te has unido a ninguna comunidad.'
-            : 'No hay comunidades que coincidan con tu búsqueda.'}
-        </p>
       ) : (
-        <ul className="grid gap-4 md:grid-cols-2">
-          {filtradas.map((comunidad) => (
-            <li key={comunidad.id}>
-              <ComunidadCard
-                comunidad={comunidad}
-                esMiembro={comunidad.esMiembro ?? false}
-                joinPending={joinPendingId === comunidad.id}
-                onUnirme={() => {
-                  setJoinPendingId(comunidad.id)
-                  joinMutation.mutate(comunidad.id, {
-                    onSettled: () => setJoinPendingId(null),
-                    onSuccess: () =>
-                      toast.success(`Te uniste a ${comunidad.nombre}`),
-                    onError: () =>
-                      toast.error('No pudimos unirte. Inténtalo de nuevo.'),
-                  })
-                }}
+        <PanelConAutoHeight deps={[tab, busqueda, filtradas.length, isLoading]}>
+          <CargaCrossfade
+            loading={isLoading}
+            skeleton={
+              <div className="grid gap-4 md:grid-cols-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-44 rounded-xl" />
+                ))}
+              </div>
+            }
+          >
+            {filtradas.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+                {tab === 'mis'
+                  ? 'Aún no te has unido a ninguna comunidad.'
+                  : 'No hay comunidades que coincidan con tu búsqueda.'}
+              </p>
+            ) : (
+              <ListaItemsAnimada
+                className="grid gap-4 space-y-0 md:grid-cols-2"
+                items={filtradas}
+                renderItem={(comunidad) => (
+                  <ComunidadCard
+                    comunidad={comunidad}
+                    esMiembro={comunidad.esMiembro ?? false}
+                    joinPending={joinPendingId === comunidad.id}
+                    onUnirme={() => {
+                      setJoinPendingId(comunidad.id)
+                      joinMutation.mutate(comunidad.id, {
+                        onSettled: () => setJoinPendingId(null),
+                        onSuccess: () =>
+                          toast.success(`Te uniste a ${comunidad.nombre}`),
+                        onError: () =>
+                          toast.error('No pudimos unirte. Inténtalo de nuevo.'),
+                      })
+                    }}
+                  />
+                )}
               />
-            </li>
-          ))}
-        </ul>
+            )}
+          </CargaCrossfade>
+        </PanelConAutoHeight>
       )}
     </div>
   )

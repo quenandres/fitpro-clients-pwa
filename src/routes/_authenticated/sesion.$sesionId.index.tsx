@@ -6,15 +6,23 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import {
   ArrowLeft,
-  Check,
-  Minus,
+  ChevronDown,
+  Flag,
   Pause,
   Play,
-  Plus,
   SkipForward,
 } from 'lucide-react'
+import {
+  CampoMetricaAnimado,
+  ImagenEjercicioAmpliada,
+  IndicadorSeriesAnimado,
+  PanelRegistroDescanso,
+  PantallaSesionCompletada,
+  ProgresoSesionAnimado,
+  RelojDescansoAnimado,
+  TecnicaColapsable,
+} from '@/components/player/PlayerMotion'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
   Dialog,
   DialogContent,
@@ -27,11 +35,13 @@ import {
   completarSesion,
   guardarSerie,
   iniciarSesion,
+  listarSeriesDeSesion,
 } from '@/lib/gateway/series'
-import { usePlan } from '@/lib/gateway/hooks'
+import { useInvalidateSesionQueries, usePlan } from '@/lib/gateway/hooks'
+import { cursorDesdeSeries } from '@/lib/player-cursor'
 import { usePlayerStore } from '@/store/player-store'
+import type { Sesion } from '@/types/dominio'
 import { cn } from '@/lib/utils'
-import type { EjercicioPrescrito } from '@/types/dominio'
 
 export const Route = createFileRoute('/_authenticated/sesion/$sesionId/')({
   validateSearch: (raw: Record<string, unknown>): { ejercicio?: number } => {
@@ -42,10 +52,34 @@ export const Route = createFileRoute('/_authenticated/sesion/$sesionId/')({
   component: PlayerPage,
 })
 
-function formatMmSs(total: number) {
-  const m = Math.floor(Math.max(total, 0) / 60)
-  const s = Math.max(total, 0) % 60
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+function ContenidoTecnicaEjercicio({
+  descripcion,
+  pasos,
+}: {
+  descripcion?: string
+  pasos: string[]
+}) {
+  return (
+    <div className="space-y-3 px-4 pb-4 md:pt-4">
+      {descripcion ? (
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          {descripcion}
+        </p>
+      ) : null}
+      {pasos.length > 0 ? (
+        <ol className="space-y-2">
+          {pasos.map((paso, i) => (
+            <li key={paso} className="flex gap-3 text-sm">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold tabular-nums text-primary">
+                {i + 1}
+              </span>
+              <span>{paso}</span>
+            </li>
+          ))}
+        </ol>
+      ) : null}
+    </div>
+  )
 }
 
 function PlayerPage() {
@@ -53,14 +87,64 @@ function PlayerPage() {
   const { ejercicio: ejercicioInicio = 0 } = Route.useSearch()
   const navigate = useNavigate()
   const { data: plan, isLoading: planLoading } = usePlan()
+  const invalidateSesionQueries = useInvalidateSesionQueries()
   const sesion = plan?.semanas
     .flatMap((s) => s.sesiones)
     .find((s) => s.id === sesionId)
+
+  if (planLoading) {
+    return <p className="p-4 text-muted-foreground">Cargando sesión…</p>
+  }
+
+  if (!sesion) {
+    return (
+      <div className="space-y-4">
+        <p role="alert">No encontramos esta sesión.</p>
+        <Link
+          to="/"
+          className={cn(buttonVariants({ variant: 'secondary' }))}
+        >
+          Volver a Hoy
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <PlayerSesionActiva
+      key={`${sesionId}-${ejercicioInicio}`}
+      sesion={sesion}
+      sesionId={sesionId}
+      ejercicioInicio={ejercicioInicio}
+      navigate={navigate}
+      invalidateSesionQueries={invalidateSesionQueries}
+    />
+  )
+}
+
+function PlayerSesionActiva({
+  sesion,
+  sesionId,
+  ejercicioInicio,
+  navigate,
+  invalidateSesionQueries,
+}: {
+  sesion: Sesion
+  sesionId: string
+  ejercicioInicio: number
+  navigate: ReturnType<typeof useNavigate>
+  invalidateSesionQueries: ReturnType<typeof useInvalidateSesionQueries>
+}) {
   const [executionSessionId, setExecutionSessionId] = useState<string | null>(
     null,
   )
+  const [iniciando, setIniciando] = useState(true)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [dialogSalir, setDialogSalir] = useState(false)
+  const [dialogTerminar, setDialogTerminar] = useState(false)
+  const [terminando, setTerminando] = useState(false)
+  const [verTecnica, setVerTecnica] = useState(false)
+  const [imagenAbierta, setImagenAbierta] = useState(false)
   const [pausaDescanso, setPausaDescanso] = useState(false)
   const [descansoTotal, setDescansoTotal] = useState(90)
 
@@ -79,6 +163,7 @@ function PlayerPage() {
     setFase,
     setDescanso,
     agregarSerieConfirmada,
+    hidratarSeries,
     avanzarSerie,
     setErrorGuardado,
     reset,
@@ -89,7 +174,6 @@ function PlayerPage() {
   const totalSeries = ejercicio?.series ?? 0
 
   useEffect(() => {
-    if (!sesion) return
     const idx = Math.min(
       ejercicioInicio,
       Math.max(sesion.ejercicios.length - 1, 0),
@@ -101,19 +185,51 @@ function PlayerPage() {
       ej?.peso_objetivo_kg ?? 0,
       ej?.repeticiones ?? 0,
     )
-    void iniciarSesion(sesionId).then((s) => setExecutionSessionId(s.id))
-    return () => reset()
-  }, [sesionId, sesion, initSesion, reset, ejercicioInicio])
-
-  useEffect(() => {
-    if (fase === 'rest') setPausaDescanso(false)
-  }, [fase])
-
-  useEffect(() => {
-    if (fase === 'rest' && descansoSegundos > descansoTotal) {
-      setDescansoTotal(descansoSegundos)
+    let cancelled = false
+    void iniciarSesion(sesionId)
+      .then(async (s) => {
+        if (cancelled) return
+        setExecutionSessionId(s.id)
+        const series = await listarSeriesDeSesion(s.id)
+        if (cancelled) return
+        const cursor = cursorDesdeSeries(sesion.ejercicios, series)
+        if (series.length > 0) {
+          const nextEj = sesion.ejercicios[cursor.ejercicioIndex]
+          hidratarSeries(
+            series,
+            cursor.ejercicioIndex,
+            cursor.serieIndex,
+            cursor.done ? 'done' : 'idle',
+          )
+          if (nextEj) {
+            setPeso(nextEj.peso_objetivo_kg ?? 0)
+            setRepeticiones(nextEj.repeticiones)
+          }
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setErrorGuardado('No se pudo abrir la sesión. Reintenta.')
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIniciando(false)
+      })
+    return () => {
+      cancelled = true
+      reset()
     }
-  }, [fase, descansoSegundos, descansoTotal])
+  }, [
+    sesionId,
+    sesion,
+    ejercicioInicio,
+    initSesion,
+    reset,
+    hidratarSeries,
+    setPeso,
+    setRepeticiones,
+    setErrorGuardado,
+  ])
 
   useEffect(() => {
     if (fase !== 'rest' || pausaDescanso || descansoSegundos <= 0) {
@@ -151,26 +267,11 @@ function PlayerPage() {
     pesoKg,
   ])
 
-  if (planLoading) {
-    return <p className="p-4 text-muted-foreground">Cargando sesión…</p>
-  }
-
-  if (!sesion) {
-    return (
-      <div className="space-y-4">
-        <p role="alert">No encontramos esta sesión.</p>
-        <Link
-          to="/"
-          className={cn(buttonVariants({ variant: 'secondary' }))}
-        >
-          Volver a Hoy
-        </Link>
-      </div>
-    )
-  }
-
   async function completarSerie() {
-    if (!ejercicio || !executionSessionId) return
+    if (!ejercicio || !executionSessionId) {
+      setErrorGuardado('La sesión aún no está lista. Espera un momento.')
+      return
+    }
     setFase('saving')
     setErrorGuardado(null)
     try {
@@ -183,9 +284,29 @@ function PlayerPage() {
       })
       agregarSerieConfirmada(serie)
       setDescansoTotal(90)
+      setPausaDescanso(false)
     } catch {
       setFase('idle')
       setErrorGuardado('Error al guardar. Reintenta.')
+    }
+  }
+
+  async function finalizarSesion() {
+    if (!executionSessionId) {
+      setErrorGuardado('La sesión no se llegó a abrir. Vuelve a Hoy e inténtalo de nuevo.')
+      setDialogTerminar(false)
+      return
+    }
+    setTerminando(true)
+    try {
+      await completarSesion(executionSessionId)
+      await invalidateSesionQueries()
+      await navigate({ to: '/' })
+    } catch {
+      setErrorGuardado('No se pudo cerrar la sesión. Reintenta.')
+      setDialogTerminar(false)
+    } finally {
+      setTerminando(false)
     }
   }
 
@@ -201,153 +322,294 @@ function PlayerPage() {
 
   if (fase === 'done') {
     return (
-      <div className="flex min-h-[80dvh] flex-col items-center justify-center space-y-6 text-center">
-        <div className="rounded-full bg-primary/10 p-4">
-          <Check className="size-12 text-primary" aria-hidden />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold">¡Entrenamiento terminado!</h1>
-          <p className="mt-2 text-muted-foreground">
-            {seriesConfirmadas.length} series registradas
-          </p>
-        </div>
-        <Button
-          size="lg"
-          className="w-full max-w-sm"
-          onClick={() => {
-            if (executionSessionId) {
-              void completarSesion(executionSessionId)
-            }
-            void navigate({ to: '/' })
-          }}
-        >
-          Listo
-        </Button>
-      </div>
+      <PantallaSesionCompletada
+        seriesCount={seriesConfirmadas.length}
+        terminando={terminando}
+        errorGuardado={errorGuardado}
+        onListo={() => void finalizarSesion()}
+      />
     )
   }
 
+  const totalSeriesSesion = sesion.ejercicios.reduce((acc, e) => acc + e.series, 0)
+  const progresoPct =
+    totalSeriesSesion > 0
+      ? Math.round((seriesConfirmadas.length / totalSeriesSesion) * 100)
+      : 0
+  const seriesHechasEjercicio = ejercicio
+    ? seriesConfirmadas.filter((s) => s.ejercicio_id === ejercicio.ejercicio_id)
+        .length
+    : 0
+  const siguienteLabel =
+    serieIndex + 1 < totalSeries
+      ? `Serie ${serieIndex + 2} de ${totalSeries}`
+      : sesion.ejercicios[ejercicioIndex + 1]?.nombre ?? 'Última serie'
+  const imagenSrc = ejercicio ? (ejercicio.gif_url ?? ejercicio.imagen_url) : undefined
+
   return (
-    <div className="-mx-4 -mt-4 flex min-h-dvh flex-col bg-background md:mx-0 md:mt-0 md:min-h-[calc(100dvh-2rem)]">
-      <div className="grid flex-1 md:grid-cols-2 md:gap-8 md:px-0">
-        <HeroEjercicio
-          ejercicio={ejercicio}
-          onSalir={() => setDialogSalir(true)}
-        />
-
-        <div className="flex flex-1 flex-col px-4 pb-6 pt-5 md:px-0 md:pt-2">
-          {errorGuardado && (
-            <p className="mb-4 text-sm text-destructive" role="alert">
-              {errorGuardado}
+    <div className="-mx-4 -mt-4 -mb-4 flex min-h-dvh flex-col bg-background md:mx-0 md:mt-0 md:mb-0 md:min-h-[calc(100dvh-2rem)]">
+      <header
+        className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80"
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+      >
+        <div className="flex items-center gap-2 px-2 py-2 md:px-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-11 shrink-0 rounded-full"
+            aria-label="Salir del entrenamiento"
+            onClick={() => setDialogSalir(true)}
+          >
+            <ArrowLeft className="size-5" />
+          </Button>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold">{sesion.nombre}</p>
+            <p className="text-xs text-muted-foreground tabular-nums">
+              Ejercicio {ejercicioIndex + 1} de {totalEjercicios} ·{' '}
+              {seriesConfirmadas.length}/{totalSeriesSesion} series
             </p>
-          )}
+          </div>
+          <Button
+            variant="ghost"
+            className="min-h-11 shrink-0 gap-1.5 px-3 text-destructive hover:text-destructive"
+            disabled={fase === 'saving' || terminando}
+            onClick={() => setDialogTerminar(true)}
+          >
+            <Flag className="size-4" aria-hidden />
+            Terminar
+          </Button>
+        </div>
+        <ProgresoSesionAnimado
+          value={progresoPct}
+          aria-label="Progreso de la sesión"
+        />
+      </header>
 
-          {ejercicio && (
-            <header className="mb-4 space-y-2">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {sesion.nombre} · ejercicio {ejercicioIndex + 1} de{' '}
-                {totalEjercicios}
-              </p>
-              <h1 className="text-2xl font-bold">{ejercicio.nombre}</h1>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                {ejercicio.descripcion}
-              </p>
-            </header>
-          )}
-
-          {ejercicio && (
-            <ol className="mb-5 space-y-2 rounded-2xl bg-card p-4 ring-1 ring-foreground/10">
-              {ejercicio.pasos.map((paso, i) => (
-                <li key={paso} className="flex gap-3 text-sm">
-                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold tabular-nums text-primary">
-                    {i + 1}
-                  </span>
-                  <span>{paso}</span>
-                </li>
-              ))}
-            </ol>
-          )}
-
-          <div className="mb-5 grid grid-cols-2 gap-3">
-            <MetricaChip
-              etiqueta="Serie"
-              valor={`${serieIndex + 1}/${totalSeries}`}
-            />
-            <MetricaChip
-              etiqueta="Reps"
-              valor={`${repeticiones}/${ejercicio?.repeticiones ?? 0}`}
+      <div className="flex flex-1 flex-col md:grid md:grid-cols-2 md:gap-8 md:pt-6">
+        {imagenSrc ? (
+          <div className="hidden overflow-hidden rounded-3xl bg-card ring-1 ring-foreground/10 md:block">
+            <img
+              src={imagenSrc}
+              alt={`Cómo hacer ${ejercicio?.nombre ?? ''}`}
+              className="h-full max-h-[32rem] w-full object-contain"
             />
           </div>
+        ) : null}
 
-          {fase === 'rest' ? (
-            <div className="mt-auto flex flex-col items-center gap-6 pb-2">
-              <RelojDescanso
-                segundos={descansoSegundos}
-                total={descansoTotal}
-              />
-              <div className="flex w-full items-center justify-center gap-4">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="min-h-14 min-w-20 rounded-full px-5"
-                  onClick={() => setDescanso(descansoSegundos + 30)}
-                >
-                  +30 s
-                </Button>
-                <Button
-                  type="button"
-                  size="icon"
-                  className="size-16 rounded-full"
-                  aria-label={pausaDescanso ? 'Reanudar descanso' : 'Pausar descanso'}
-                  onClick={() => setPausaDescanso((v) => !v)}
-                >
-                  {pausaDescanso ? (
-                    <Play className="size-6" />
-                  ) : (
-                    <Pause className="size-6" />
-                  )}
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="min-h-14 min-w-20 rounded-full px-5"
-                  onClick={saltarDescanso}
-                >
-                  <SkipForward className="size-5" aria-hidden />
-                  Saltar
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-auto space-y-6 pb-2">
-              <div className="grid grid-cols-2 gap-4">
-                <CampoMetrica
-                  label="Peso (kg)"
-                  value={pesoKg}
-                  onChange={setPeso}
-                  step={2.5}
-                  inputMode="decimal"
-                />
-                <CampoMetrica
-                  label="Reps"
-                  value={repeticiones}
-                  onChange={setRepeticiones}
-                  step={1}
-                  inputMode="numeric"
-                />
-              </div>
-              <Button
-                size="lg"
-                className="min-h-14 w-full text-base"
-                disabled={fase === 'saving'}
-                onClick={() => void completarSerie()}
+        <div className="flex flex-1 flex-col">
+          <div className="flex-1 space-y-4 px-4 pt-4 pb-4 md:px-0 md:pt-0">
+            {errorGuardado && (
+              <p
+                className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                role="alert"
               >
-                {fase === 'saving' ? 'Guardando…' : 'Completar serie'}
-              </Button>
-            </div>
-          )}
+                {errorGuardado}
+              </p>
+            )}
+
+            {ejercicio && (
+              <section className="flex items-start gap-3">
+                {imagenSrc ? (
+                  <button
+                    type="button"
+                    className="shrink-0 overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10 transition-transform active:scale-[.97] focus-visible:ring-2 focus-visible:ring-ring md:hidden"
+                    aria-label={`Ampliar imagen de ${ejercicio.nombre}`}
+                    onClick={() => setImagenAbierta(true)}
+                  >
+                    <img
+                      src={imagenSrc}
+                      alt=""
+                      className="size-20 object-contain"
+                    />
+                  </button>
+                ) : null}
+                <div className="min-w-0 flex-1 space-y-1">
+                  <h1 className="text-xl leading-tight font-bold md:text-2xl">
+                    {ejercicio.nombre}
+                  </h1>
+                  <p className="text-sm text-muted-foreground tabular-nums">
+                    {ejercicio.series} × {ejercicio.repeticiones} reps
+                    {ejercicio.peso_objetivo_kg
+                      ? ` · ${ejercicio.peso_objetivo_kg} kg`
+                      : ''}
+                  </p>
+                  <IndicadorSeriesAnimado
+                    total={totalSeries}
+                    hechas={seriesHechasEjercicio}
+                    actual={serieIndex}
+                  />
+                </div>
+              </section>
+            )}
+
+            {ejercicio && (ejercicio.descripcion || ejercicio.pasos.length > 0) && (
+              <section className="rounded-xl bg-card ring-1 ring-foreground/10">
+                <button
+                  type="button"
+                  className="flex min-h-11 w-full items-center justify-between gap-2 px-4 py-2 text-sm font-medium md:hidden"
+                  aria-expanded={verTecnica}
+                  onClick={() => setVerTecnica((v) => !v)}
+                >
+                  Cómo hacerlo
+                  <ChevronDown
+                    className={cn(
+                      'size-4 text-muted-foreground transition-transform',
+                      verTecnica && 'rotate-180',
+                    )}
+                    aria-hidden
+                  />
+                </button>
+                <TecnicaColapsable abierto={verTecnica}>
+                  <ContenidoTecnicaEjercicio
+                    descripcion={ejercicio.descripcion}
+                    pasos={ejercicio.pasos}
+                  />
+                </TecnicaColapsable>
+                <div className="hidden md:block">
+                  <ContenidoTecnicaEjercicio
+                    descripcion={ejercicio.descripcion}
+                    pasos={ejercicio.pasos}
+                  />
+                </div>
+              </section>
+            )}
+          </div>
+
+          <div
+            className="sticky bottom-0 z-40 border-t border-border bg-background/95 px-4 pt-3 backdrop-blur supports-backdrop-filter:bg-background/80 md:static md:border-0 md:bg-transparent md:px-0 md:backdrop-blur-none"
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
+          >
+            <PanelRegistroDescanso
+              fase={fase}
+              panelDescanso={
+                <div className="flex flex-col items-center gap-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Descanso · siguiente: {siguienteLabel}
+                  </p>
+                  <RelojDescansoAnimado
+                    segundos={descansoSegundos}
+                    total={descansoTotal}
+                  />
+                  <div className="grid w-full grid-cols-3 gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="min-h-14 rounded-full"
+                      onClick={() => {
+                        const next = descansoSegundos + 30
+                        setDescanso(next)
+                        setDescansoTotal((t) => Math.max(t, next))
+                      }}
+                    >
+                      +30 s
+                    </Button>
+                    <Button
+                      type="button"
+                      className="min-h-14 rounded-full"
+                      aria-label={
+                        pausaDescanso ? 'Reanudar descanso' : 'Pausar descanso'
+                      }
+                      onClick={() => setPausaDescanso((v) => !v)}
+                    >
+                      {pausaDescanso ? (
+                        <Play className="size-5" />
+                      ) : (
+                        <Pause className="size-5" />
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="min-h-14 rounded-full"
+                      onClick={saltarDescanso}
+                    >
+                      <SkipForward className="size-5" aria-hidden />
+                      Saltar
+                    </Button>
+                  </div>
+                </div>
+              }
+              panelRegistro={
+                <div className="space-y-3">
+                  <CampoMetricaAnimado
+                    label="Peso"
+                    unidad="kg"
+                    value={pesoKg}
+                    onChange={setPeso}
+                    step={2.5}
+                    inputMode="decimal"
+                    decimalPlaces={1}
+                  />
+                  <CampoMetricaAnimado
+                    label="Reps"
+                    unidad={`de ${ejercicio?.repeticiones ?? 0}`}
+                    value={repeticiones}
+                    onChange={setRepeticiones}
+                    step={1}
+                    inputMode="numeric"
+                  />
+                  <Button
+                    size="lg"
+                    className="min-h-14 w-full text-base"
+                    disabled={
+                      fase === 'saving' || iniciando || !executionSessionId
+                    }
+                    onClick={() => void completarSerie()}
+                  >
+                    {iniciando
+                      ? 'Abriendo sesión…'
+                      : fase === 'saving'
+                        ? 'Guardando…'
+                        : `Completar serie ${serieIndex + 1} de ${totalSeries}`}
+                  </Button>
+                </div>
+              }
+            />
+          </div>
         </div>
       </div>
+
+      <Dialog open={imagenAbierta} onOpenChange={setImagenAbierta}>
+        <DialogContent className="p-2">
+          <DialogTitle className="sr-only">{ejercicio?.nombre}</DialogTitle>
+          {imagenSrc ? (
+            <ImagenEjercicioAmpliada
+              src={imagenSrc}
+              alt={`Cómo hacer ${ejercicio?.nombre ?? ''}`}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={dialogTerminar} onOpenChange={(o) => !terminando && setDialogTerminar(o)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Terminar la rutina ahora?</DialogTitle>
+            <DialogDescription>
+              Registraste {seriesConfirmadas.length} de {totalSeriesSesion} series.
+              {seriesConfirmadas.length < totalSeriesSesion
+                ? ' Las series que faltan quedarán sin registrar y la sesión se marcará como terminada.'
+                : ' La sesión se marcará como terminada.'}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="ghost"
+              disabled={terminando}
+              onClick={() => setDialogTerminar(false)}
+            >
+              Seguir entrenando
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={terminando}
+              onClick={() => void finalizarSesion()}
+            >
+              {terminando ? 'Terminando…' : 'Terminar rutina'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={dialogSalir} onOpenChange={setDialogSalir}>
         <DialogContent>
@@ -355,7 +617,7 @@ function PlayerPage() {
             <DialogTitle>¿Salir del entrenamiento?</DialogTitle>
             <DialogDescription>
               {seriesConfirmadas.length > 0
-                ? 'Tienes series registradas en esta sesión. Si sales, el progreso no guardado se perderá.'
+                ? 'Tus series registradas quedan guardadas. Podrás retomar la sesión donde la dejaste.'
                 : 'Podrás volver a empezar cuando quieras.'}
             </DialogDescription>
           </DialogHeader>
@@ -364,7 +626,7 @@ function PlayerPage() {
               Seguir entrenando
             </Button>
             <Button
-              variant="destructive"
+              variant="secondary"
               onClick={() =>
                 void navigate({
                   to: '/sesion/$sesionId/detalle',
@@ -377,142 +639,6 @@ function PlayerPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  )
-}
-
-function HeroEjercicio({
-  ejercicio,
-  onSalir,
-}: {
-  ejercicio: EjercicioPrescrito | undefined
-  onSalir: () => void
-}) {
-  return (
-    <div className="relative isolate overflow-hidden bg-card md:rounded-3xl">
-      {ejercicio ? (
-        <img
-          src={ejercicio.gif_url ?? ejercicio.imagen_url}
-          alt={`Cómo hacer ${ejercicio.nombre}`}
-          className="h-[38dvh] w-full bg-background object-contain object-center md:h-full md:min-h-[32rem]"
-        />
-      ) : (
-        <div className="h-[38dvh] bg-muted md:min-h-[32rem]" />
-      )}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/30" />
-      <Button
-        variant="secondary"
-        size="icon"
-        className="absolute top-3 left-3 z-10 size-11 rounded-full"
-        aria-label="Salir del entrenamiento"
-        onClick={onSalir}
-      >
-        <ArrowLeft className="size-5" />
-      </Button>
-    </div>
-  )
-}
-
-function MetricaChip({ etiqueta, valor }: { etiqueta: string; valor: string }) {
-  return (
-    <div className="rounded-2xl bg-secondary px-4 py-3 text-center">
-      <p className="text-xs font-medium text-muted-foreground">{etiqueta}</p>
-      <p className="text-xl font-bold tabular-nums">{valor}</p>
-    </div>
-  )
-}
-
-function RelojDescanso({
-  segundos,
-  total,
-}: {
-  segundos: number
-  total: number
-}) {
-  const r = 86
-  const c = 2 * Math.PI * r
-  const pct = total > 0 ? Math.min(segundos / total, 1) : 0
-  return (
-    <div className="relative size-56">
-      <svg
-        viewBox="0 0 200 200"
-        className="-rotate-90 text-primary"
-        aria-hidden
-      >
-        <circle
-          cx="100"
-          cy="100"
-          r={r}
-          fill="none"
-          className="stroke-muted"
-          strokeWidth="8"
-        />
-        <circle
-          cx="100"
-          cy="100"
-          r={r}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="8"
-          strokeDasharray={c}
-          strokeDashoffset={c * (1 - pct)}
-          strokeLinecap="round"
-        />
-      </svg>
-      <p className="absolute inset-0 flex items-center justify-center text-5xl font-bold tabular-nums">
-        {formatMmSs(segundos)}
-      </p>
-    </div>
-  )
-}
-
-function CampoMetrica({
-  label,
-  value,
-  onChange,
-  step,
-  inputMode,
-}: {
-  label: string
-  value: number
-  onChange: (v: number) => void
-  step: number
-  inputMode: 'decimal' | 'numeric'
-}) {
-  return (
-    <div className="space-y-2">
-      <p className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {label}
-      </p>
-      <div className="flex items-center justify-center gap-2">
-        <Button
-          type="button"
-          variant="secondary"
-          size="icon"
-          className="size-14 shrink-0 rounded-full"
-          aria-label={`Reducir ${label}`}
-          onClick={() => onChange(Math.max(0, value - step))}
-        >
-          <Minus className="size-5" />
-        </Button>
-        <Input
-          type="number"
-          inputMode={inputMode}
-          value={value || ''}
-          onChange={(e) => onChange(Number(e.target.value) || 0)}
-          className="h-16 w-24 border-0 bg-transparent text-center text-4xl font-bold tabular-nums shadow-none focus-visible:ring-0"
-        />
-        <Button
-          type="button"
-          variant="secondary"
-          size="icon"
-          className="size-14 shrink-0 rounded-full"
-          aria-label={`Aumentar ${label}`}
-          onClick={() => onChange(value + step)}
-        >
-          <Plus className="size-5" />
-        </Button>
-      </div>
     </div>
   )
 }

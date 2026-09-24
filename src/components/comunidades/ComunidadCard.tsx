@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { MetricaContador } from '@/components/motion/DashboardMotion'
 import { ETIQUETAS_CATEGORIA } from '@/lib/comunidades/display'
 import type { Comunidad } from '@/types/comunidad'
 
@@ -64,9 +65,9 @@ export function ComunidadCard({
       <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-0">
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <Badge variant="outline">{ETIQUETAS_CATEGORIA[comunidad.categoria]}</Badge>
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex items-center gap-1 tabular-nums">
             <Users className="size-3.5" aria-hidden />
-            {comunidad.miembrosCount}
+            <MetricaContador valor={comunidad.miembrosCount} className="inline" />
           </span>
         </div>
         <div className="flex gap-2">

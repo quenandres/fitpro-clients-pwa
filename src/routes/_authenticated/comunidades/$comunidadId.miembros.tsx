@@ -4,6 +4,8 @@ import { Search, ShieldCheck, ShieldOff, UserX } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { ListaItemsAnimada } from '@/components/comunidades/ComunidadesMotion'
+import { CargaCrossfade } from '@/components/motion/DashboardMotion'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   puedeAdministrarComunidad,
@@ -83,10 +85,6 @@ function ComunidadMiembrosPage() {
     })
   }
 
-  if (isLoading) {
-    return <Skeleton className="h-48 rounded-xl" />
-  }
-
   if (isError) {
     return (
       <p className="rounded-xl border border-destructive/30 px-4 py-8 text-center text-sm text-destructive">
@@ -99,6 +97,10 @@ function ComunidadMiembrosPage() {
   }
 
   return (
+    <CargaCrossfade
+      loading={isLoading}
+      skeleton={<Skeleton className="h-48 rounded-xl" />}
+    >
     <div className="space-y-4">
       <h2 className="text-lg font-semibold">
         Miembros ({miembros.length})
@@ -123,12 +125,11 @@ function ComunidadMiembrosPage() {
           No hay miembros que coincidan con la búsqueda.
         </p>
       ) : (
-        <div className="space-y-2">
-          {filtrados.map((miembro) => (
-            <div
-              key={miembro.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border p-3"
-            >
+        <ListaItemsAnimada
+          className="space-y-2"
+          items={filtrados}
+          renderItem={(miembro) => (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border p-3">
               <div className="flex items-center gap-3">
                 <span className="flex size-10 items-center justify-center rounded-full bg-secondary text-xs font-semibold">
                   {miembro.iniciales}
@@ -206,9 +207,10 @@ function ComunidadMiembrosPage() {
                 </div>
               )}
             </div>
-          ))}
-        </div>
+          )}
+        />
       )}
     </div>
+    </CargaCrossfade>
   )
 }

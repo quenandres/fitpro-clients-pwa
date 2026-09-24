@@ -10,7 +10,9 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { RecuperarPasosAnimados } from '@/components/auth/RecuperarPasosAnimados'
 import { AppShell } from '@/components/AppShell'
+import { AuthErrorAnimado } from '@/components/motion/DashboardMotion'
 import { requestRecovery } from '@/lib/gateway/auth'
 import { mensajeDeError } from '@/lib/gateway/errors'
 import { rolPermitidoEnApp } from '@/lib/gateway/schemas'
@@ -98,115 +100,111 @@ function RecuperarPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {paso === 'email' ? (
-              <form onSubmit={handlePedirCodigo} className="flex flex-col gap-4">
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="h-11 text-base"
-                  />
-                </div>
-                {error && (
-                  <p className="text-sm text-destructive" role="alert">
-                    {error}
-                  </p>
-                )}
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="w-full"
-                  disabled={loading}
-                >
-                  {loading ? 'Enviando…' : 'Enviar código'}
-                </Button>
-                <p className="text-center text-sm text-muted-foreground">
-                  <Link
-                    to="/login"
-                    className="text-primary underline-offset-4 hover:underline"
+            <RecuperarPasosAnimados
+              paso={paso}
+              formularioEmail={
+                <form onSubmit={handlePedirCodigo} className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="h-11 text-base"
+                    />
+                  </div>
+                  <AuthErrorAnimado error={error} />
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="w-full"
+                    disabled={loading}
                   >
-                    Volver a entrar
-                  </Link>
-                </p>
-              </form>
-            ) : (
-              <form onSubmit={handleGuardar} className="flex flex-col gap-4">
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="token">Código</Label>
-                  <Input
-                    id="token"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    required
-                    minLength={6}
-                    maxLength={20}
-                    value={token}
-                    onChange={(e) => setToken(e.target.value)}
-                    className="h-11 text-base tracking-[0.28em]"
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="password">Contraseña nueva</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    autoComplete="new-password"
-                    required
-                    minLength={6}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="h-11 text-base"
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="confirmacion">Confirmar contraseña</Label>
-                  <Input
-                    id="confirmacion"
-                    type="password"
-                    autoComplete="new-password"
-                    required
-                    minLength={6}
-                    value={confirmacion}
-                    onChange={(e) => setConfirmacion(e.target.value)}
-                    className="h-11 text-base"
-                  />
-                </div>
-                {error && (
-                  <p className="text-sm text-destructive" role="alert">
-                    {error}
+                    {loading ? 'Enviando…' : 'Enviar código'}
+                  </Button>
+                  <p className="text-center text-sm text-muted-foreground">
+                    <Link
+                      to="/login"
+                      className="text-primary underline-offset-4 hover:underline"
+                    >
+                      Volver a entrar
+                    </Link>
                   </p>
-                )}
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="w-full"
-                  disabled={loading}
-                >
-                  {loading ? 'Guardando…' : 'Guardar y entrar'}
-                </Button>
-                <button
-                  type="button"
-                  className="text-center text-sm text-primary underline-offset-4 hover:underline"
-                  onClick={() => void handleReenviar()}
-                  disabled={loading}
-                >
-                  Reenviar código
-                </button>
-                <p className="text-center text-sm text-muted-foreground">
-                  <Link
-                    to="/login"
-                    className="text-primary underline-offset-4 hover:underline"
+                </form>
+              }
+              formularioCodigo={
+                <form onSubmit={handleGuardar} className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="token">Código</Label>
+                    <Input
+                      id="token"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      required
+                      minLength={6}
+                      maxLength={20}
+                      value={token}
+                      onChange={(e) => setToken(e.target.value)}
+                      className="h-11 text-base tracking-[0.28em]"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="password">Contraseña nueva</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      autoComplete="new-password"
+                      required
+                      minLength={6}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="h-11 text-base"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="confirmacion">Confirmar contraseña</Label>
+                    <Input
+                      id="confirmacion"
+                      type="password"
+                      autoComplete="new-password"
+                      required
+                      minLength={6}
+                      value={confirmacion}
+                      onChange={(e) => setConfirmacion(e.target.value)}
+                      className="h-11 text-base"
+                    />
+                  </div>
+                  <AuthErrorAnimado error={error} />
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="w-full"
+                    disabled={loading}
                   >
-                    Volver a entrar
-                  </Link>
-                </p>
-              </form>
-            )}
+                    {loading ? 'Guardando…' : 'Guardar y entrar'}
+                  </Button>
+                  <button
+                    type="button"
+                    className="text-center text-sm text-primary underline-offset-4 hover:underline"
+                    onClick={() => void handleReenviar()}
+                    disabled={loading}
+                  >
+                    Reenviar código
+                  </button>
+                  <p className="text-center text-sm text-muted-foreground">
+                    <Link
+                      to="/login"
+                      className="text-primary underline-offset-4 hover:underline"
+                    >
+                      Volver a entrar
+                    </Link>
+                  </p>
+                </form>
+              }
+            />
           </CardContent>
         </Card>
       </div>

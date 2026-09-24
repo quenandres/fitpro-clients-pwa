@@ -18,10 +18,30 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+    },
   },
   {
     files: ['src/routes/**/*.{ts,tsx}', 'src/components/ui/**/*.{ts,tsx}'],
     rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
+    files: [
+      'src/components/animate-ui/**/*.{ts,tsx}',
+      'src/hooks/use-auto-height.tsx',
+      'src/hooks/use-controlled-state.tsx',
+      'src/hooks/use-is-in-view.tsx',
+    ],
+    rules: {
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/static-components': 'off',
+      'react-hooks/refs': 'off',
       'react-refresh/only-export-components': 'off',
     },
   },

@@ -53,6 +53,7 @@ hay que leer su documentación para trabajar aquí.
 | Estilos | Tailwind 4 + tokens shadcn; **marca verde en `--primary`** (`DESIGN.md §3`) | — |
 | Tipografía | **Geist Variable** (`@fontsource-variable/geist`), `--font-sans` / `--font-heading` | Ver `DESIGN.md §4` |
 | Iconos | `lucide-react` | — |
+| Motion | **Animate UI** (registry de shadcn, copy-first) sobre `motion` — capa de movimiento, no segundo set de componentes (C15) | Plan por fases e inventario por pantalla en `DESIGN.md §18` |
 | PWA | `vite-plugin-pwa` (`registerType: autoUpdate`, manifest `GYMApp`) — **faltan `public/pwa-192x192.png` y `pwa-512x512.png`** | Instalable; offline real después del MVP |
 | Compilador | **React Compiler** vía `babel-plugin-react-compiler` + `@rolldown/plugin-babel` | — |
 | Backend | **`../gym-gateway`** — auth, plan, sesiones, comunidades, fotos. IA de rutinas también está ahí (antes `gym-mcp`) | [GATEWAY.md](./GATEWAY.md) |
@@ -147,10 +148,10 @@ agregar `VITE_SUPABASE_*` (C1).
    `src/components/ui/` los genera el CLI (`npx shadcn@latest add`). No
    escribirlos a mano; editarlos solo para adaptarlos a tokens de marca, y
    dejar constancia en `DESIGN.md §8`.
-9. **PWA a medias:** el manifest apunta a `/pwa-192x192.png` y
-   `/pwa-512x512.png`, que **no existen** en `public/`. La instalación falla
-   hasta generarlos. El nombre del manifest es `GYMApp` — decidir el definitivo
-   antes de publicar.
+9. **PWA instalable:** `public/pwa-192x192.png`, `public/pwa-512x512.png` y
+   `public/pwa-icon.svg` (verde marca, mancuerna). Probar con
+   `npm run build && npm run preview`. El nombre del manifest sigue siendo
+   `GYMApp` — decidir el definitivo antes de publicar.
 10. **El service worker no corre en `npm run dev`.** Probar instalabilidad y
     caché con `npm run build && npm run preview`.
 11. **React Compiler está activo.** No agregar `useMemo`/`useCallback`
@@ -200,8 +201,18 @@ anotarla aquí con fecha.
   `/recuperar` pide un OTP de 6 dígitos vía `POST /api/auth/recover` y
   `POST /api/auth/reset-password`. El enlace de Supabase (`otp_expired` en el
   hash) se descarta: el usuario escribe el código y una contraseña nueva.
+- **C15 — Animate UI como capa de motion, selectiva (2026-09-24).** Se adopta
+ [Animate UI](https://animate-ui.com) por el registry de shadcn, y **solo** sus
+ capas agnósticas (`effects`, `texts`, `buttons`, `animate`, hooks). Queda fuera
+ todo lo que trae otra librería de primitivas (`components/base|radix/*`
+ importan `@base-ui-components/react`, mientras el repo usa `@base-ui/react`) y
+ todo lo decorativo (fondos, partículas, tilt). Un componente de
+ `src/components/ui/` no se reemplaza por su gemelo animado: se envuelve.
+ Motion solo donde comunica estado o progreso real; no se anima la entrada de
+ las pantallas. Inventario por pantalla, tokens de transición y fases en
+ **`DESIGN.md §18`**. Rollout **fases 0–6 cerrado** (2026-09-24; QA en §18.9).
 - **Pendientes de decidir:** nombre definitivo del producto/manifest; Sentry/PostHog;
-  Vitest; iconos PWA.
+ Vitest; iconos PWA.
 
 ### Convenciones de código
 
@@ -255,7 +266,7 @@ Nav de 6 items (C13): Hoy, Plan, Historial, Progreso, Comunidades, Perfil.
 3. **Dominio** — `types/` + Zod auth; mock para plan/sesiones. → *parcial*
 4. **Lectura** — `/` y `/plan` contra el gateway. → *hecho*
 5. **Escritura** — player que **persiste series** vía gateway. → *hecho*
-6. **Cierre** — `/historial`, `/progreso`, `/perfil` reales; iconos PWA. → *parcial*
+6. **Cierre** — `/historial`, `/progreso`, `/perfil` reales; iconos PWA. → *hecho* (iconos 2026-09-24)
 
 Después del MVP: offline real (cola de sincronización), notificaciones,
 observabilidad, tests.

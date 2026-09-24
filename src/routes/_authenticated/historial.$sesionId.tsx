@@ -1,6 +1,10 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { ArrowLeft, Dumbbell } from 'lucide-react'
-import { useMemo } from 'react'
+import { ArrowLeft, ChevronDown, Dumbbell } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import {
+  ContenidoColapsable,
+  MetricaContador,
+} from '@/components/motion/DashboardMotion'
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import {
@@ -22,6 +26,76 @@ import { cn } from '@/lib/utils'
 export const Route = createFileRoute('/_authenticated/historial/$sesionId')({
   component: DetalleSesionTrackingPage,
 })
+
+function TablaSeriesEjercicio({
+  series,
+}: {
+  series: { n: number; reps: number; peso_kg?: number | null }[]
+}) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-left text-xs text-muted-foreground">
+            <th className="pb-2 pr-4 font-medium">Serie</th>
+            <th className="pb-2 pr-4 font-medium">Reps</th>
+            <th className="pb-2 font-medium">Peso</th>
+          </tr>
+        </thead>
+        <tbody>
+          {series.map((serie) => (
+            <tr key={serie.n} className="border-t border-border">
+              <td className="py-2 pr-4 tabular-nums">{serie.n}</td>
+              <td className="py-2 pr-4 tabular-nums">{serie.reps}</td>
+              <td className="py-2 tabular-nums">
+                {serie.peso_kg != null && serie.peso_kg > 0
+                  ? `${serie.peso_kg} kg`
+                  : '—'}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function EjercicioSesionCard({
+  nombre,
+  series,
+}: {
+  nombre: string
+  series: { n: number; reps: number; peso_kg?: number | null }[]
+}) {
+  const [abierto, setAbierto] = useState(true)
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <button
+          type="button"
+          className="flex min-h-11 w-full items-center justify-between gap-2 text-left"
+          aria-expanded={abierto}
+          onClick={() => setAbierto((v) => !v)}
+        >
+          <CardTitle className="text-base">{nombre}</CardTitle>
+          <ChevronDown
+            className={cn(
+              'size-4 shrink-0 text-muted-foreground transition-transform',
+              abierto && 'rotate-180',
+            )}
+            aria-hidden
+          />
+        </button>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <ContenidoColapsable abierto={abierto} deps={[series.length]}>
+          <TablaSeriesEjercicio series={series} />
+        </ContenidoColapsable>
+      </CardContent>
+    </Card>
+  )
+}
 
 function DetalleSesionTrackingPage() {
   const { sesionId } = Route.useParams()
@@ -89,9 +163,10 @@ function DetalleSesionTrackingPage() {
           </Badge>
         </div>
         <h1 className="text-2xl font-bold">{sesion.nombre}</h1>
-        <p className="text-sm text-muted-foreground">
-          {formatSessionDate(sesion.fecha)} · {sesion.series_completadas} series ·{' '}
-          {sesion.volumen_kg.toLocaleString('es-ES')} kg de volumen · ~
+        <p className="text-sm text-muted-foreground tabular-nums">
+          {formatSessionDate(sesion.fecha)} ·{' '}
+          <MetricaContador valor={sesion.series_completadas} /> series ·{' '}
+          <MetricaContador valor={sesion.volumen_kg} /> kg de volumen · ~
           {sesion.duracion_min} min
         </p>
       </header>
@@ -106,37 +181,11 @@ function DetalleSesionTrackingPage() {
       ) : (
         <div className="space-y-4">
           {sesion.ejercicios.map((ej) => (
-            <Card key={ej.ejercicio_id}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">{ej.nombre}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-xs text-muted-foreground">
-                        <th className="pb-2 pr-4 font-medium">Serie</th>
-                        <th className="pb-2 pr-4 font-medium">Reps</th>
-                        <th className="pb-2 font-medium">Peso</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {ej.series.map((serie) => (
-                        <tr key={serie.n} className="border-t border-border">
-                          <td className="py-2 pr-4 tabular-nums">{serie.n}</td>
-                          <td className="py-2 pr-4 tabular-nums">{serie.reps}</td>
-                          <td className="py-2 tabular-nums">
-                            {serie.peso_kg != null && serie.peso_kg > 0
-                              ? `${serie.peso_kg} kg`
-                              : '—'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
+            <EjercicioSesionCard
+              key={ej.ejercicio_id}
+              nombre={ej.nombre}
+              series={ej.series}
+            />
           ))}
         </div>
       )}

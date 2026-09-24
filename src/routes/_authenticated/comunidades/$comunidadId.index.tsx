@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useMemo } from 'react'
 import { CalendarDays, ChevronRight } from 'lucide-react'
+import { ListaItemsAnimada } from '@/components/comunidades/ComunidadesMotion'
 import { PostCard } from '@/components/comunidades/PostCard'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -11,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { CargaCrossfade } from '@/components/motion/DashboardMotion'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   useComunidad,
@@ -47,13 +49,14 @@ function ComunidadInicioPage() {
 
   const proximoEvento = eventosProximos[0]
 
-  if (loadingComunidad || loadingPosts) {
-    return <Skeleton className="h-48 rounded-xl" />
-  }
-
-  if (!comunidad) return null
+  const loading = loadingComunidad || loadingPosts
 
   return (
+    <CargaCrossfade
+      loading={loading}
+      skeleton={<Skeleton className="h-48 rounded-xl" />}
+    >
+      {comunidad ? (
     <div className="space-y-6">
       {comunidad.reglas.length > 0 && (
         <Card>
@@ -90,10 +93,10 @@ function ComunidadInicioPage() {
             Aún no hay publicaciones en esta comunidad.
           </p>
         ) : (
-          <div className="space-y-3">
-            {posts.map((post) => (
+          <ListaItemsAnimada
+            items={posts}
+            renderItem={(post) => (
               <PostCard
-                key={post.id}
                 post={post}
                 autorNombre={post.autorNombre ?? 'Miembro'}
                 autorIniciales={post.autorIniciales ?? '?'}
@@ -101,8 +104,8 @@ function ComunidadInicioPage() {
                 esPropio={post.autorId === user?.id}
                 onToggleLike={() => toggleLike.mutate(post.id)}
               />
-            ))}
-          </div>
+            )}
+          />
         )}
       </section>
 
@@ -160,5 +163,7 @@ function ComunidadInicioPage() {
         )}
       </section>
     </div>
+      ) : null}
+    </CargaCrossfade>
   )
 }

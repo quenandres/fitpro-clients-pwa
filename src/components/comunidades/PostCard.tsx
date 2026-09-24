@@ -1,5 +1,9 @@
 import { useState } from 'react'
 import { Heart, Pin, PinOff, Trash2 } from 'lucide-react'
+import { Zoom } from '@/components/animate-ui/primitives/effects/zoom'
+import { ListaComentariosAnimada } from '@/components/comunidades/ComunidadesMotion'
+import { MetricaContador } from '@/components/motion/DashboardMotion'
+import { TRANSICION_CONTROL } from '@/lib/motion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -130,20 +134,33 @@ export function PostCard({
           onClick={onToggleLike}
           disabled={!puedeParticipar || likePending}
         >
-          <Heart
-            className={cn('size-4', liked && 'fill-current')}
-            aria-hidden
-          />
+          <Zoom
+            key={liked ? 'liked' : 'unliked'}
+            inView
+            inViewOnce={false}
+            initialScale={0.75}
+            transition={TRANSICION_CONTROL}
+            className="flex items-center"
+          >
+            <Heart
+              className={cn('size-4', liked && 'fill-current')}
+              aria-hidden
+            />
+          </Zoom>
           Me gusta
           {post.likes.length > 0 && (
-            <span className="tabular-nums">({post.likes.length})</span>
+            <span className="tabular-nums">
+              (
+              <MetricaContador valor={post.likes.length} className="inline" />)
+            </span>
           )}
         </Button>
 
         {comentarios.length > 0 && (
-          <div className="space-y-2 border-t border-border pt-3">
-            {comentarios.map((c) => (
-              <div key={c.id} className="rounded-lg bg-secondary/60 px-3 py-2">
+          <ListaComentariosAnimada
+            items={comentarios}
+            renderItem={(c) => (
+              <>
                 <p className="text-xs font-semibold">
                   {c.autorNombre ?? 'Miembro'}
                 </p>
@@ -151,9 +168,9 @@ export function PostCard({
                 <p className="text-[11px] text-muted-foreground">
                   {formatFechaRelativa(c.creadoEn)}
                 </p>
-              </div>
-            ))}
-          </div>
+              </>
+            )}
+          />
         )}
 
         {puedeParticipar && onComentar && (

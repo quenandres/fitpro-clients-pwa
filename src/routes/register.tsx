@@ -12,6 +12,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AppShell } from '@/components/AppShell'
+import { AuthErrorAnimado } from '@/components/motion/DashboardMotion'
 import { mensajeDeError } from '@/lib/gateway/errors'
 import { rolPermitidoEnApp } from '@/lib/gateway/schemas'
 import { useAuth } from '@/providers/auth-provider'
@@ -149,11 +150,7 @@ function RegisterPage() {
                   className="h-11 text-base"
                 />
               </div>
-              {error && (
-                <p className="text-sm text-destructive" role="alert">
-                  {error}
-                </p>
-              )}
+              <AuthErrorAnimado error={error} />
               <Button
                 type="submit"
                 size="lg"

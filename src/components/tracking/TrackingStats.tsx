@@ -5,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { MetricaContador } from '@/components/motion/DashboardMotion'
 import type { SesionTracking } from '@/types/tracking'
 import { calcStreak, sumSeries, sumVolumen } from '@/lib/tracking/utils'
 
@@ -16,13 +17,15 @@ type TrackingStatsProps = {
 function KpiCard({
   icon: Icon,
   label,
-  value,
+  valor,
   suffix,
+  decimales = 0,
 }: {
   icon: typeof Activity
   label: string
-  value: string | number
+  valor: number
   suffix?: string
+  decimales?: number
 }) {
   return (
     <Card size="sm">
@@ -34,7 +37,7 @@ function KpiCard({
       </CardHeader>
       <CardContent className="pt-0">
         <p className="text-2xl font-bold tabular-nums">
-          {value}
+          <MetricaContador valor={valor} decimales={decimales} />
           {suffix ? (
             <span className="ml-1 text-sm font-normal text-muted-foreground">
               {suffix}
@@ -56,16 +59,16 @@ export function TrackingStats({ sesiones, periodLabel }: TrackingStatsProps) {
       <KpiCard
         icon={Activity}
         label={`Sesiones (${periodLabel})`}
-        value={sesiones.length}
+        valor={sesiones.length}
       />
-      <KpiCard icon={Flame} label="Racha actual" value={streak} suffix="días" />
       <KpiCard
-        icon={Dumbbell}
-        label="Volumen"
-        value={volumen.toLocaleString('es-ES')}
-        suffix="kg"
+        icon={Flame}
+        label="Racha actual"
+        valor={streak}
+        suffix="días"
       />
-      <KpiCard icon={Layers} label="Series" value={series} />
+      <KpiCard icon={Dumbbell} label="Volumen" valor={volumen} suffix="kg" />
+      <KpiCard icon={Layers} label="Series" valor={series} />
     </div>
   )
 }

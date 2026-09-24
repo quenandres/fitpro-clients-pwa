@@ -12,6 +12,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
+import { isMockMode } from '@/lib/mock-mode'
 import { useAuth } from '@/providers/auth-provider'
 import { useTheme } from '@/providers/theme-provider'
 
@@ -30,7 +31,7 @@ function PerfilPage() {
 
   async function handleLogout() {
     await logout()
-    await navigate({ to: '/login' })
+    await navigate({ to: isMockMode() ? '/' : '/login' })
   }
 
   return (

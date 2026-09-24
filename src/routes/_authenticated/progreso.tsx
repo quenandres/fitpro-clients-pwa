@@ -1,7 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
 import { Camera, ImagePlus, Trash2 } from 'lucide-react'
+import { ImageZoom } from '@/components/animate-ui/primitives/effects/image-zoom'
+import { TRANSICION_ESTADO } from '@/lib/motion'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -140,58 +143,75 @@ function ProgresoPage() {
               <CardTitle className="text-base">Línea de tiempo</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {fotos.map((foto) => (
-                <div
-                  key={foto.id}
-                  className="flex items-center gap-2 rounded-lg border border-border p-2"
-                >
-                  <img
-                    src={foto.url}
-                    alt=""
-                    className="size-12 rounded-md object-cover"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs text-muted-foreground">
-                      {new Date(foto.creada_en).toLocaleDateString('es-ES')}
-                    </p>
-                    <div className="flex gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setAntesId(foto.id)}
-                        className={cn(
-                          'rounded px-1.5 py-0.5 text-xs',
-                          antesId === foto.id
-                            ? 'bg-primary/20 text-primary'
-                            : 'text-muted-foreground hover:bg-accent',
-                        )}
-                      >
-                        Antes
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDespuesId(foto.id)}
-                        className={cn(
-                          'rounded px-1.5 py-0.5 text-xs',
-                          despuesId === foto.id
-                            ? 'bg-primary/20 text-primary'
-                            : 'text-muted-foreground hover:bg-accent',
-                        )}
-                      >
-                        Después
-                      </button>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="shrink-0 text-destructive"
-                    aria-label="Eliminar foto"
-                    onClick={() => setBorrarId(foto.id)}
+              <AnimatePresence initial={false}>
+                {fotos.map((foto) => (
+                  <motion.div
+                    key={foto.id}
+                    layout
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                    transition={TRANSICION_ESTADO}
+                    className="overflow-hidden"
                   >
-                    <Trash2 className="size-4" />
-                  </Button>
-                </div>
-              ))}
+                    <div className="flex items-center gap-2 rounded-lg border border-border p-2">
+                      <ImageZoom
+                        zoomOnHover={false}
+                        zoomOnClick
+                        zoomScale={2.5}
+                        transition={TRANSICION_ESTADO}
+                        className="size-12 shrink-0 overflow-hidden rounded-md"
+                      >
+                        <img
+                          src={foto.url}
+                          alt=""
+                          className="size-12 object-cover"
+                        />
+                      </ImageZoom>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs text-muted-foreground">
+                          {new Date(foto.creada_en).toLocaleDateString('es-ES')}
+                        </p>
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setAntesId(foto.id)}
+                            className={cn(
+                              'rounded px-1.5 py-0.5 text-xs',
+                              antesId === foto.id
+                                ? 'bg-primary/20 text-primary'
+                                : 'text-muted-foreground hover:bg-accent',
+                            )}
+                          >
+                            Antes
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDespuesId(foto.id)}
+                            className={cn(
+                              'rounded px-1.5 py-0.5 text-xs',
+                              despuesId === foto.id
+                                ? 'bg-primary/20 text-primary'
+                                : 'text-muted-foreground hover:bg-accent',
+                            )}
+                          >
+                            Después
+                          </button>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 text-destructive"
+                        aria-label="Eliminar foto"
+                        onClick={() => setBorrarId(foto.id)}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </CardContent>
           </Card>
         )}
@@ -277,11 +297,19 @@ function ComparadorSlot({
       </CardHeader>
       <CardContent>
         {foto ? (
-          <img
-            src={foto.url}
-            alt={`Foto ${label.toLowerCase()}`}
-            className="aspect-[3/4] w-full rounded-lg object-cover"
-          />
+          <ImageZoom
+            zoomOnHover
+            zoomOnClick
+            zoomScale={2}
+            transition={TRANSICION_ESTADO}
+            className="aspect-[3/4] w-full overflow-hidden rounded-lg"
+          >
+            <img
+              src={foto.url}
+              alt={`Foto ${label.toLowerCase()}`}
+              className="aspect-[3/4] w-full object-cover"
+            />
+          </ImageZoom>
         ) : (
           <div
             className="flex aspect-[3/4] items-center justify-center rounded-lg bg-muted p-4 text-center text-sm text-muted-foreground"

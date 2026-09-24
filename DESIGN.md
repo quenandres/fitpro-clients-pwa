@@ -10,7 +10,7 @@
 > sobre Base UI, con Geist**, y este archivo lo declara completo. No importar
 > clases, componentes ni recetas desde otros repos.
 >
-> Última revisión: 2026-09-14
+> Última revisión: 2026-09-24
 
 ---
 
@@ -273,6 +273,9 @@ AppShell
   (~0.25s), porque marcan progreso real.
 - **No** coreografiar la entrada de la pantalla como una landing.
 - Respetar `prefers-reduced-motion` siempre.
+- La implementación (qué primitiva de **Animate UI** se usa en cada momento, con
+  qué tokens de transición) está en **§18**. Estos principios manden sobre
+  cualquier receta de allí.
 
 ### Estados de control
 
@@ -316,6 +319,10 @@ Nunca ofrecer un CTA que la persona no puede ejecutar desde esta app.
 **Regla base:** el componente se agrega con el CLI
 (`npx shadcn@latest add <nombre>`) y se compone. No se escribe a mano ni se
 copia de otro repo.
+
+El movimiento no vive aquí: las primitivas de **Animate UI** envuelven a estos
+componentes y se listan en **§18**. Un componente de `src/components/ui/` nunca
+se reemplaza por su equivalente animado.
 
 ### Disponibles hoy
 
@@ -398,6 +405,10 @@ Es la razón de existir de esta app. Reglas propias:
 | Prefill inteligente | Prellenar con lo prescrito o con la última sesión. Editar cuesta un toque. |
 | Sin pérdida | Cualquier salida con series sin enviar pide confirmación. |
 | Pantalla activa | Considerar Wake Lock durante la sesión (evaluar antes de implementar; requiere HTTPS). |
+| Imagen compacta (2026-09-23) | En móvil, miniatura de 80px junto al nombre; tocarla abre la imagen en `Dialog`. La técnica («Cómo hacerlo») va colapsada. En `md+`, imagen grande en la columna izquierda y técnica abierta. |
+| Barra superior fija | Salir (izq.), sesión + «Ejercicio N de M · x/y series», y **Terminar** (`ghost` + `text-destructive`). Debajo, `Progress` fino con las series de toda la sesión. |
+| Terminar rutina | Salida de emergencia: confirma con `Dialog` indicando cuántas series quedan sin registrar; al confirmar llama a `completar` y vuelve a Hoy. |
+| Panel inferior sticky | Peso y reps en filas (label · − · valor · +) y CTA «Completar serie X de Y»; en descanso, anillo compacto + «siguiente: …». Respeta `safe-area-inset-bottom`. |
 
 Anti-patrones del player: modales encima de modales; scroll horizontal para ver
 series; un tap para abrir un menú y otro para completar una serie; animaciones
@@ -463,6 +474,7 @@ barras, carga media en línea, racha, meta y resumen. Los datos viven en
 - Probar en **`.dark`** y a 375px antes de dar por hecho.
 - Respetar safe areas en toda barra fija.
 - Decir la verdad sobre el estado de guardado.
+- Animar solo lo que cambió de verdad: un número, un progreso, un estado (§18).
 
 ### Don't
 
@@ -477,6 +489,9 @@ barras, carga media en línea, racha, meta y resumen. Los datos viven en
 - No `useMemo`/`useCallback` decorativos: el React Compiler está activo.
 - No editar `src/routeTree.gen.ts` — es generado.
 - No prometer guardado mientras el endpoint no exista.
+- No fondos animados, partículas, confeti ni tilt/magnetic (§18.6).
+- No reemplazar un componente de `ui/` por su gemelo de Animate UI (§18.1).
+- No animación que retrase registrar una serie (§9).
 
 ---
 
@@ -492,6 +507,8 @@ barras, carga media en línea, racha, meta y resumen. Los datos viven en
 - [ ] Inputs numéricos con `inputMode` y ≥ 16px.
 - [ ] Estados: carga (skeleton), vacío, error, offline.
 - [ ] `:focus-visible` intacto; `aria-label` en botones de solo icono.
+- [ ] Motion solo en estado/progreso real, con tokens de §18.3; probada con
+      `prefers-reduced-motion: reduce` activo.
 - [ ] Probada en `.dark` y a 375px de ancho.
 - [ ] Copy en español, segunda persona, sin prometer persistencia inexistente.
 
@@ -519,13 +536,19 @@ barras, carga media en línea, racha, meta y resumen. Los datos viven en
 |------|---------|
 | Tokens y base | [src/index.css](src/index.css) |
 | Componentes UI | [src/components/ui/](src/components/ui/) |
+| Primitivas de motion | [src/components/animate-ui/](src/components/animate-ui/) (§18) |
+| Tokens de transición | [src/lib/motion.ts](src/lib/motion.ts) (§18.3) |
 | Config de shadcn | [components.json](components.json) |
 | Hoy (progreso) | [src/routes/_authenticated/index.tsx](src/routes/_authenticated/index.tsx) |
 | Detalle de sesión | [src/routes/_authenticated/sesion.$sesionId.detalle.tsx](src/routes/_authenticated/sesion.$sesionId.detalle.tsx) |
 | Shell / nav | [src/components/AppShell.tsx](src/components/AppShell.tsx) |
-| Player | [src/routes/_authenticated/sesion.$sesionId.tsx](src/routes/_authenticated/sesion.$sesionId.tsx) |
+| Nav animada | [src/components/shell/NavHighlight.tsx](src/components/shell/NavHighlight.tsx) |
+| Player | [src/routes/_authenticated/sesion.$sesionId.index.tsx](src/routes/_authenticated/sesion.$sesionId.index.tsx) |
+| Motion del player | [src/components/player/PlayerMotion.tsx](src/components/player/PlayerMotion.tsx) |
+| Motion Hoy / Seguimiento | [src/components/motion/DashboardMotion.tsx](src/components/motion/DashboardMotion.tsx) |
 | Auth (login/register/recuperar) | [src/routes/login.tsx](src/routes/login.tsx), [register.tsx](src/routes/register.tsx), [recuperar.tsx](src/routes/recuperar.tsx) |
 | Formulario en sheet | [src/routes/_authenticated/progreso.tsx](src/routes/_authenticated/progreso.tsx) |
+| Plan (semanas) | [src/components/plan/SemanaPlanCard.tsx](src/components/plan/SemanaPlanCard.tsx) |
 
 ---
 
@@ -533,9 +556,202 @@ barras, carga media en línea, racha, meta y resumen. Los datos viven en
 
 - Token nuevo o cambio de valor → `src/index.css` **y** las tablas de §3–§5.
 - Componente de shadcn agregado → listarlo en §8.
+- Primitiva de Animate UI agregada → marcarla como instalada en §18.5 y, si
+  introduce un tiempo nuevo, agregar el token en §18.3 y en `src/lib/motion.ts`.
 - Primera pantalla de un patrón nuevo → registrarla en §16 como referencia.
 - Decisión visual global (aplicar la marca a `--primary`, separar
   `--font-heading`, cambiar la nav) → anotarla en `CLAUDE.md §6` con fecha.
 - **Código canónico: [`src/index.css`](src/index.css).** Si esta guía y el CSS
   divergen, **gana el CSS** y hay que actualizar este archivo — no al revés,
   salvo una decisión explícita de evolucionar el token.
+
+---
+
+## 18. Motion con Animate UI
+
+> Decisión **C15** (`CLAUDE.md §6`, 2026-09-24). Animate UI entra como **capa de
+> movimiento** sobre el sistema existente, no como un segundo set de
+> componentes. Los principios de §7 manden sobre cualquier receta de aquí.
+
+### 18.1 Qué adoptamos y qué no
+
+[Animate UI](https://animate-ui.com) no es un paquete npm: es un **registry de
+shadcn** (copy-first) de componentes sobre Tailwind + [`motion`](https://motion.dev).
+Publica el mismo componente en cuatro sabores — Radix UI, **Base UI**, Headless
+UI y uno propio — más tres capas que no dependen de ninguna librería de
+primitivas: `effects`, `texts` y `buttons`.
+
+Aquí entra **solo lo agnóstico**:
+
+| Capa del registry | Entra | Por qué |
+|---|---|---|
+| `primitives/effects/*`, `primitives/texts/*`, `primitives/buttons/*`, `primitives/animate/*`, `hooks/*`, `lib/*` | **Sí** | Solo dependen de `motion`. Se componen sobre los componentes que ya tenemos. |
+| `components/base/*`, `primitives/base/*` | **No** | Importan `@base-ui-components/react`; este repo usa `@base-ui/react` ^1.8.0 (el paquete renombrado). Instalarlos mete **dos** copias de Base UI y duplica `dialog`, `switch`, `progress`, `tabs`. |
+| `components/radix/*`, `components/headless/*` | **No** | Traerían Radix o Headless UI a un repo que ya eligió Base UI. |
+| `components/backgrounds/*`, `components/community/*`, `animate-code*`, `github-stars`, `animate-cursor` | **No** | Decorativo o ajeno al producto (§15). |
+
+Dos reglas que se derivan de lo anterior:
+
+1. **Un componente de `src/components/ui/` no se reemplaza** por su equivalente
+   animado. Se envuelve con un efecto.
+2. **Nunca correr `shadcn init` ni agregar el item `index` del registry:**
+   sobrescribe `components.json` e `index.css`, que ya están configurados.
+
+> Si algún día se necesita un colapsable o unas tabs animadas con semántica
+> completa, la vía es **`@base-ui/react` (ya instalado) envuelto en
+> `AutoHeight` / `Highlight`**, no la versión `base` de Animate UI.
+
+### 18.2 Instalación
+
+`components.json` gana el registry:
+
+```json
+"registries": {
+  "@animate-ui": "https://animate-ui.com/r/{name}.json"
+}
+```
+
+Y cada primitiva se agrega por su nombre:
+
+```bash
+npx shadcn@latest add @animate-ui/primitives-texts-sliding-number
+```
+
+Los archivos caen en `src/components/animate-ui/…`, más `src/hooks/…` y
+`src/lib/…` para los helpers que compartan. El CLI instala las dependencias que
+declara cada item; `tw-animate-css` ya está importado en `index.css`.
+
+| Dependencia | Versión | Quién la pide |
+|---|---|---|
+| `motion` | ^13.4.3 (peer `react` ^19 ✔) | todas las primitivas |
+| `react-use-measure` | ^2.1.7 | `texts-sliding-number` |
+
+**Tradeoff aceptado:** `motion` suma ~35 kB gzip a una PWA que se abre con mala
+red. Se acota importando siempre desde `motion/react`, no coreografiando
+pantallas y manteniendo la lista de §18.5 corta. Si el bundle crece, se recorta
+esa lista — no se relaja el principio.
+
+### 18.3 Tokens de transición
+
+`motion` se configura con objetos, no con CSS, así que los tiempos de §7 viven en
+**`src/lib/motion.ts`** y nadie escribe un `transition` a mano en un componente.
+
+| Token | Valor | Uso |
+|---|---|---|
+| `TRANSICION_CONTROL` | `{ duration: 0.15, ease: 'easeOut' }` | hover, foco, chips, badges |
+| `TRANSICION_ESTADO` | `{ duration: 0.2, ease: 'easeOut' }` | error que aparece, skeleton → contenido, alto automático |
+| `TRANSICION_PROGRESO` | `{ duration: 0.25, ease: 'easeInOut' }` | barra de sesión, anillo de descanso, cambio de serie |
+| `SPRING_METRICA` | `{ type: 'spring', stiffness: 300, damping: 30 }` | dígitos de peso/reps, contadores |
+| `DURACION_TEMA_MS` | `350` | revelado View Transition en `ThemeToggle` (única excepción; con `reduce` se omite) |
+
+Nada por encima de 0.3 s salvo el tema: más que eso, en esta app, es una espera.
+
+### 18.4 Reduced motion
+
+Un único punto de control, en `src/main.tsx`, envolviendo el router:
+
+```tsx
+<MotionConfig reducedMotion="user">
+```
+
+`motion` deja entonces solo opacidad cuando el sistema pide menos movimiento. Las
+utilidades `motion-reduce:*` que ya existen (`FilaEntrenamiento`, barras de Hoy)
+siguen siendo la vía para lo que se anima con CSS.
+
+### 18.5 Inventario por pantalla
+
+Motion **solo donde comunica estado o progreso real**. Ninguna pantalla anima su
+entrada. La columna *Estado* se actualiza al instalar cada primitiva (§17).
+
+| Pantalla | Momento que se anima | Primitiva | Estado |
+|---|---|---|---|
+| Global (`main.tsx`) | Preferencia de movimiento del sistema | `MotionConfig` de `motion/react` | instalado (fase 0) |
+| `AppShell` — nav | Realce deslizante en el ítem activo (bottom + top) | `primitives-effects-highlight` | instalado (fase 3) |
+| `ThemeToggle` | Cambio claro/oscuro con revelado (View Transition) | `primitives-effects-theme-toggler` | instalado (fase 3) |
+| **Player** — peso y reps | Dígitos ruedan al tocar −/+ | `primitives-texts-sliding-number` | instalado (fase 1) |
+| **Player** — cronómetro de descanso | `mm:ss` rueda por segundo en vez de saltar | `primitives-texts-sliding-number` | instalado (fase 1) |
+| **Player** — anillo de descanso | `strokeDashoffset` animado, también al sumar +30 s | `motion.circle` + `TRANSICION_PROGRESO` | instalado (fase 1) |
+| **Player** — `IndicadorSeries` | La serie actual se marca con un realce que se mueve; la confirmada entra con spring | `primitives-effects-highlight` + `primitives-effects-zoom` | instalado (fase 1) |
+| **Player** — `Progress` de cabecera | El avance crece, no salta | `motion.div` + `TRANSICION_PROGRESO` | instalado (fase 1) |
+| **Player** — registro ↔ descanso | Crossfade entre el panel de métricas y el de descanso (`fase`) | `AnimatePresence` + `TRANSICION_PROGRESO` | instalado (fase 1) |
+| **Player** — «Cómo hacerlo» | El colapsable abre con alto real, sin salto | `primitives-effects-auto-height` | instalado (fase 1) |
+| **Player** — miniatura del ejercicio | Zoom al abrir la imagen en `Dialog` | `primitives-effects-image-zoom` | instalado (fase 1) |
+| **Player** — pantalla de cierre | Check con spring y conteo de series registradas | `primitives-effects-zoom` + `primitives-texts-counting-number` | instalado (fase 1) |
+| **Hoy** — volumen, carga, racha, meta | Las cifras transicionan al cambiar de periodo | `primitives-texts-counting-number` | instalado (fase 2) |
+| **Hoy** — `SelectorPeriodo` | La pastilla activa se desliza entre los 4 periodos | `primitives-effects-highlight` | instalado (fase 2) |
+| **Hoy** — barras, línea y anillo | Barras crecen desde la base; la línea se dibuja; el anillo avanza | `motion` + `hooks-use-is-in-view` | instalado (fase 2) |
+| **Hoy** — panel de progreso | El alto se ajusta al cambiar de periodo | `primitives-effects-auto-height` | instalado (fase 2) |
+| **Plan** | Semanas que abren y cierran con alto real | `ContenidoColapsable` (`primitives-effects-auto-height`) | instalado (fase 4) |
+| **Seguimiento** (`/historial`) | Totales de sesiones y volumen | `primitives-texts-counting-number` | instalado (fase 2) |
+| **Seguimiento** — detalle | Series por ejercicio al expandir | `primitives-effects-auto-height` | instalado (fase 2) |
+| **Progreso** | Zoom de la foto; salida de la foto borrada tras confirmar el servidor | `primitives-effects-image-zoom` + `AnimatePresence` | instalado (fase 4) |
+| **Comunidades** — tabs de explorar y eventos | Realce que se desliza entre pestañas | `SelectorTabsAnimado` (`primitives-effects-highlight`) | instalado (fase 5) |
+| **Comunidades** — likes | Contador que rueda y pop del icono | `MetricaContador` + `primitives-effects-zoom` | instalado (fase 5) |
+| **Comunidades** — publicaciones y comentarios | Entrada del item **ya confirmado** por el servidor | `AnimatePresence` + `TRANSICION_ESTADO` | instalado (fase 5) |
+| **Comunidades** — carga | Crossfade skeleton → contenido | `CargaCrossfade` (`AnimatePresence` + opacidad) | instalado (fase 5) |
+| **Comunidades** — nav interna (`ComunidadTabsNav`) | Realce entre Inicio / Publicaciones / Eventos / Miembros | `primitives-effects-highlight` | instalado (2026-09-24) |
+| **Comunidades** — listas (explorar, feed, eventos, miembros) | Entrada/salida de ítems confirmados por servidor | `ListaItemsAnimada` (`ComunidadesMotion.tsx`) | instalado (2026-09-24) |
+| **Comunidades** — avisos (suspendido, no miembro) | Alto automático al mostrar/ocultar | `AvisoComunidadAnimado` (`auto-height`) | instalado (2026-09-24) |
+| **Comunidades** — contadores en header/tarjetas | Miembros, posts, eventos, cupo RSVP | `MetricaContador` (`counting-number`) | instalado (2026-09-24) |
+| **Comunidades** — tipo de publicación (sheet) | Pastilla deslizante General / Logro / Pregunta / Anuncio | `SelectorTabsAnimado` | instalado (2026-09-24) |
+| **Comunidades** — cambio de tab explorar/eventos | Alto del panel al cambiar filtros | `PanelConAutoHeight` | instalado (2026-09-24) |
+| **Auth** (`/login`, `/register`, `/recuperar`) | El error aparece sin empujar el layout de golpe | `AuthErrorAnimado` (`primitives-effects-auto-height`) | instalado (fase 5) |
+| **Auth** — `/recuperar` | Crossfade entre pedir código y escribir contraseña | `RecuperarPasosAnimados` (`AnimatePresence`) | instalado (fase 5) |
+
+### 18.6 Prohibido
+
+| No usar | Por qué |
+|---|---|
+| `components-backgrounds-*` (stars, bubble, hole, fireworks, hexagon, gravity-stars) | Fondo animado en una pantalla que se mira entre series: ruido y batería |
+| `primitives-effects-particles`, confeti | §10: la persona está cansada, no quiere confeti |
+| `primitives-effects-magnetic`, `tilt`, `shine` | Efectos de landing; aquí estorban al pulgar |
+| `primitives-texts-typing`, `morphing`, `gradient`, `shimmering` en contenido | El texto de dominio se lee, no se actúa |
+| `components-buttons-liquid`, `flip` | Decoran un botón cuya única virtud es acertarse con el pulgar |
+| `components-community-*` (radial menu, playful todolist, …) | Patrones ajenos al producto |
+| Cualquier animación en el camino de «completar serie» | §9: retrasar el siguiente registro es el peor pecado del player |
+
+### 18.7 Fases
+
+| Fase | Alcance | Hecho cuando |
+|---|---|---|
+| **0 — Cimientos** | `npm i motion`; `registries` en `components.json`; `MotionConfig reducedMotion="user"` en `main.tsx`; `src/lib/motion.ts` con los tokens de §18.3 | **Hecho** (2026-09-24): build OK; sin cambios visuales |
+| **1 — Player** | Todo el bloque *Player* de §18.5 | **Hecho** (2026-09-24): `PlayerMotion.tsx` + player; build OK |
+| **2 — Hoy y Seguimiento** | Cifras, selector de periodo, barras/línea/anillo, alto del panel | **Hecho** (2026-09-24): `DashboardMotion.tsx`; build OK |
+| **3 — Shell y tema** | Realce de la nav (bottom y top), `ThemeToggle` con revelado | **Hecho** (2026-09-24): `NavHighlight.tsx` + `ThemeToggle`; build OK |
+| **4 — Plan y Progreso** | Colapsables de semanas, zoom y borrado de fotos | **Hecho** (2026-09-24): `SemanaPlanCard` + `/progreso`; build OK |
+| **5 — Comunidades y auth** | Tabs, likes, inserciones confirmadas, errores con alto automático | **Hecho** (2026-09-24): comunidades + auth; build OK |
+| **6 — Cierre** | Pasada de QA: `reduce`, 60 fps en móvil real, tamaño del bundle; §18.5 marcado como instalado | **Hecho** (2026-09-24): ver §18.9 |
+
+Las fases son independientes y se pueden parar en cualquiera: la app queda
+coherente en cada corte. La 1 es la que justifica el trabajo; si solo se hace
+una, es esa.
+
+### 18.9 Registro QA (fase 6, 2026-09-24)
+
+| Comprobación | Resultado |
+|---|---|
+| `npm run build` | OK (`tsc -b` + Vite) |
+| Chunk `motion` (gzip) | ~41.6 kB (§18.2 aceptaba ~35 kB; dentro de margen razonable) |
+| Entry `index` (gzip) | ~100.4 kB |
+| `MotionConfig reducedMotion="user"` | `src/main.tsx` |
+| View Transition tema + `reduce` | Sin animación de clip; cambio instantáneo vía `prefiereMovimientoReducido()` |
+| Duraciones fuera de `motion.ts` / primitivas | Solo `DURACION_TEMA_MS` en theme toggler |
+| Inventario §18.5 | Todas las filas en *instalado* (fases 0–5) |
+| §18.6 (prohibidos) | Sin backgrounds/partículas/magnetic en `src/` |
+| Player — camino «completar serie» | Sin animación que bloquee el submit (zoom post-confirmación) |
+| 60 fps en dispositivo físico | No automatizable aquí; smoke manual en player + Hoy recomendado |
+
+| `npm run lint` | OK (2026-09-24): player refactorizado; overrides en primitivas Animate UI |
+| Iconos PWA | `public/pwa-192x192.png`, `pwa-512x512.png` (fuente `pwa-icon.svg`) |
+
+### 18.8 Checklist de una animación nueva
+
+- [ ] Comunica un cambio real de estado, progreso o dato. Si no, no va.
+- [ ] Usa un token de §18.3; no hay `duration` a mano en el componente.
+- [ ] No está en el camino crítico de registrar una serie.
+- [ ] Probada con `prefers-reduced-motion: reduce`: la pantalla sigue siendo
+      usable y nada queda a medias.
+- [ ] No reemplazó un componente de `src/components/ui/`.
+- [ ] Números siguen en `tabular-nums` y no cambian de ancho al animarse.
+- [ ] El objetivo táctil no se movió (≥ 44px, ≥ 56px en el player).
+- [ ] Anotada en §18.5 con su estado.

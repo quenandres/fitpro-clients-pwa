@@ -18,6 +18,15 @@ import {
 } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import {
+  AnilloProgresoAnimado,
+  BarraMetaAnimada,
+  BarrasVolumenAnimadas,
+  LineaCargaAnimada,
+  MetricaContador,
+  PanelConAutoHeight,
+  SelectorTabsAnimado,
+} from '@/components/motion/DashboardMotion'
 import { PrototypeBanner } from '@/components/PrototypeBanner'
 import { useSesionHoy } from '@/lib/gateway/hooks'
 import { HISTORIAL_SEARCH_DEFAULT } from '@/lib/routes/historialSearch'
@@ -36,13 +45,6 @@ const PERIODOS: { id: PeriodoHoy; label: string }[] = [
   { id: 'trimestre', label: '3 meses' },
   { id: 'anio', label: 'Año' },
 ]
-
-function formatKg(valor: number, decimales = 0) {
-  return valor.toLocaleString('es-ES', {
-    minimumFractionDigits: decimales,
-    maximumFractionDigits: decimales,
-  })
-}
 
 function inicialDeEmail(email: string | undefined) {
   return email?.trim().charAt(0).toUpperCase() || '?'
@@ -63,7 +65,7 @@ function CabeceraHoy({ racha }: { racha: number | null }) {
         {racha !== null && racha > 0 && (
           <p className="flex min-h-11 items-center gap-1 rounded-full bg-secondary px-3 text-sm font-medium tabular-nums">
             <Flame className="size-4 text-primary" aria-hidden />
-            <span>{racha}</span>
+            <MetricaContador valor={racha} className="text-sm font-medium" />
             <span className="sr-only">días de racha</span>
           </p>
         )}
@@ -78,43 +80,6 @@ function CabeceraHoy({ racha }: { racha: number | null }) {
         </Link>
       </div>
     </header>
-  )
-}
-
-function SelectorPeriodo({
-  value,
-  onChange,
-}: {
-  value: PeriodoHoy
-  onChange: (periodo: PeriodoHoy) => void
-}) {
-  return (
-    <div
-      role="tablist"
-      aria-label="Periodo"
-      className="grid grid-cols-4 gap-1 rounded-full bg-secondary p-1"
-    >
-      {PERIODOS.map((periodo) => {
-        const activo = value === periodo.id
-        return (
-          <button
-            key={periodo.id}
-            type="button"
-            role="tab"
-            aria-selected={activo}
-            onClick={() => onChange(periodo.id)}
-            className={cn(
-              'min-h-11 rounded-full px-1 text-xs font-semibold transition-colors',
-              activo
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {periodo.label}
-          </button>
-        )
-      })}
-    </div>
   )
 }
 
@@ -150,116 +115,6 @@ function Delta({
   )
 }
 
-function BarrasVolumen({
-  barras,
-  destacadoIndex,
-}: {
-  barras: { etiqueta: string; valor: number }[]
-  destacadoIndex: number
-}) {
-  const max = Math.max(...barras.map((b) => b.valor), 1)
-  return (
-    <div className="flex h-36 items-end gap-2">
-      {barras.map((barra, i) => {
-        const alto = Math.max((barra.valor / max) * 100, barra.valor === 0 ? 6 : 12)
-        return (
-          <div
-            key={barra.etiqueta}
-            className="flex min-w-0 flex-1 flex-col items-center gap-2"
-          >
-            <div className="flex h-28 w-full items-end justify-center">
-              <div
-                className={cn(
-                  'w-full max-w-6 rounded-full motion-reduce:transition-none',
-                  i === destacadoIndex ? 'bg-chart-1' : 'bg-chart-1/30',
-                )}
-                style={{ height: `${alto}%` }}
-              />
-            </div>
-            <span className="text-xs font-medium text-muted-foreground">
-              {barra.etiqueta}
-            </span>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-function LineaCarga({ puntos }: { puntos: number[] }) {
-  const min = Math.min(...puntos)
-  const max = Math.max(...puntos)
-  const span = max - min || 1
-  const w = 320
-  const h = 88
-  const pad = 10
-  const coords = puntos.map((punto, i) => {
-    const x = pad + (i / Math.max(puntos.length - 1, 1)) * (w - pad * 2)
-    const y = pad + (1 - (punto - min) / span) * (h - pad * 2)
-    return { x, y }
-  })
-
-  return (
-    <svg
-      viewBox={`0 0 ${w} ${h}`}
-      className="h-20 w-full text-chart-1"
-      role="img"
-      aria-label="Tendencia de carga media"
-    >
-      <polyline
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        points={coords.map((c) => `${c.x},${c.y}`).join(' ')}
-      />
-      {coords.map((c, i) => (
-        <circle
-          key={`${c.x}-${c.y}`}
-          cx={c.x}
-          cy={c.y}
-          r={i === coords.length - 1 ? 4.5 : 3}
-          fill="currentColor"
-        />
-      ))}
-    </svg>
-  )
-}
-
-function Anillo({ value }: { value: number }) {
-  const r = 26
-  const c = 2 * Math.PI * r
-  const offset = c * (1 - Math.min(Math.max(value, 0), 100) / 100)
-  return (
-    <svg
-      viewBox="0 0 72 72"
-      className="size-14 -rotate-90 text-chart-1"
-      aria-hidden
-    >
-      <circle
-        cx="36"
-        cy="36"
-        r={r}
-        fill="none"
-        className="stroke-muted"
-        strokeWidth="8"
-      />
-      <circle
-        cx="36"
-        cy="36"
-        r={r}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="8"
-        strokeDasharray={c}
-        strokeDashoffset={offset}
-        strokeLinecap="round"
-      />
-    </svg>
-  )
-}
-
 function PanelProgreso({ periodo }: { periodo: PeriodoHoy }) {
   const data = progresoHoyMock[periodo]
   const etiquetaPeriodo =
@@ -278,7 +133,7 @@ function PanelProgreso({ periodo }: { periodo: PeriodoHoy }) {
           <div>
             <CardDescription>Volumen levantado</CardDescription>
             <CardTitle className="mt-1 text-3xl font-bold tabular-nums">
-              {formatKg(data.volumen_kg)}{' '}
+              <MetricaContador valor={data.volumen_kg} />{' '}
               <span className="text-base font-medium text-muted-foreground">
                 kg
               </span>
@@ -290,7 +145,7 @@ function PanelProgreso({ periodo }: { periodo: PeriodoHoy }) {
           </div>
         </CardHeader>
         <CardContent>
-          <BarrasVolumen
+          <BarrasVolumenAnimadas
             barras={data.barras}
             destacadoIndex={data.destacadoIndex}
           />
@@ -302,7 +157,7 @@ function PanelProgreso({ periodo }: { periodo: PeriodoHoy }) {
           <div>
             <CardDescription>Carga media</CardDescription>
             <CardTitle className="mt-1 text-3xl font-bold tabular-nums">
-              {formatKg(data.carga_kg, 1)}{' '}
+              <MetricaContador valor={data.carga_kg} decimales={1} />{' '}
               <span className="text-base font-medium text-muted-foreground">
                 kg
               </span>
@@ -314,7 +169,7 @@ function PanelProgreso({ periodo }: { periodo: PeriodoHoy }) {
           </div>
         </CardHeader>
         <CardContent>
-          <LineaCarga puntos={data.carga_puntos} />
+          <LineaCargaAnimada puntos={data.carga_puntos} />
         </CardContent>
       </Card>
     </div>
@@ -337,7 +192,7 @@ function TarjetasResumen({
             Racha
           </CardDescription>
           <CardTitle className="text-3xl font-bold tabular-nums">
-            {racha ?? 0}
+            <MetricaContador valor={racha ?? 0} />
             <span className="ml-1 text-sm font-medium text-muted-foreground">
               días
             </span>
@@ -351,26 +206,14 @@ function TarjetasResumen({
         <CardHeader className="pb-0">
           <CardDescription>Meta semanal</CardDescription>
           <CardTitle className="text-3xl font-bold tabular-nums">
-            {metaPct}
+            <MetricaContador valor={metaPct} />
             <span className="ml-1 text-sm font-medium text-muted-foreground">
               %
             </span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <div
-            className="h-1 w-full overflow-hidden rounded-full bg-muted"
-            role="progressbar"
-            aria-valuenow={metaPct}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="Avance de la meta semanal"
-          >
-            <div
-              className="h-full rounded-full bg-primary"
-              style={{ width: `${metaPct}%` }}
-            />
-          </div>
+          <BarraMetaAnimada value={metaPct} />
           <p className="text-xs text-muted-foreground">En ritmo.</p>
         </CardContent>
       </Card>
@@ -388,16 +231,16 @@ function Insights({ periodo }: { periodo: PeriodoHoy }) {
           <CardHeader>
             <CardDescription>Volumen</CardDescription>
             <CardTitle className="text-sm font-semibold tabular-nums">
-              {formatKg(data.volumen_kg)} kg
+              <MetricaContador valor={data.volumen_kg} /> kg
             </CardTitle>
           </CardHeader>
         </Card>
         <Card size="sm">
           <CardHeader className="items-center text-center">
-            <Anillo value={data.meta_semanal_pct} />
+            <AnilloProgresoAnimado value={data.meta_semanal_pct} />
             <CardDescription>Completado</CardDescription>
             <CardTitle className="text-sm font-semibold tabular-nums">
-              {data.meta_semanal_pct}%
+              <MetricaContador valor={data.meta_semanal_pct} />%
             </CardTitle>
           </CardHeader>
         </Card>
@@ -411,7 +254,7 @@ function Insights({ periodo }: { periodo: PeriodoHoy }) {
               {data.mejor_dia}
             </CardTitle>
             <p className="text-xs tabular-nums text-muted-foreground">
-              {formatKg(data.mejor_volumen_kg)} kg
+              <MetricaContador valor={data.mejor_volumen_kg} /> kg
             </p>
           </CardHeader>
         </Card>
@@ -581,15 +424,27 @@ function HoyPage() {
             Pasos pequeños, cambios grandes.
           </p>
         </div>
-        <SelectorPeriodo value={periodo} onChange={setPeriodo} />
+        <SelectorTabsAnimado
+          items={PERIODOS}
+          value={periodo}
+          onChange={setPeriodo}
+          ariaLabel="Periodo"
+        />
         <div className="grid gap-6 md:grid-cols-2 md:items-start">
-          <div className="space-y-4">
-            <PanelProgreso periodo={periodo} />
-          </div>
-          <div className="space-y-4">
-            <TarjetasResumen racha={racha_dias} metaPct={data.meta_semanal_pct} />
-            <Insights periodo={periodo} />
-          </div>
+          <PanelConAutoHeight deps={[periodo]}>
+            <div className="space-y-4">
+              <PanelProgreso periodo={periodo} />
+            </div>
+          </PanelConAutoHeight>
+          <PanelConAutoHeight deps={[periodo, data.meta_semanal_pct]}>
+            <div className="space-y-4">
+              <TarjetasResumen
+                racha={racha_dias}
+                metaPct={data.meta_semanal_pct}
+              />
+              <Insights periodo={periodo} />
+            </div>
+          </PanelConAutoHeight>
         </div>
       </section>
     </>,

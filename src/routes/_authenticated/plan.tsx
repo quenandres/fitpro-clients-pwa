@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { ChevronRight } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { SemanaPlanCard } from '@/components/plan/SemanaPlanCard'
 import {
   Card,
   CardContent,
@@ -18,7 +17,6 @@ import {
 import { SesionPreview } from '@/components/SesionPreview'
 import { usePlan } from '@/lib/gateway/hooks'
 import type { Sesion } from '@/types/dominio'
-import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/_authenticated/plan')({
   component: PlanPage,
@@ -72,48 +70,13 @@ function PlanPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-4">
           {plan.semanas.map((semana) => (
-            <Card key={semana.numero}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">
-                  Semana {semana.numero}
-                  {semana.numero === plan.semana_actual && (
-                    <Badge className="ml-2" variant="secondary">
-                      Actual
-                    </Badge>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-1 p-0 pb-2">
-                {semana.sesiones.map((sesion) => (
-                  <button
-                    key={sesion.id}
-                    type="button"
-                    onClick={() => seleccionarSesion(sesion)}
-                    className={cn(
-                      'flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-accent',
-                      seleccionada?.id === sesion.id && 'bg-primary/10',
-                    )}
-                  >
-                    <div>
-                      <p className="font-medium">{sesion.nombre}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {sesion.dia}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="capitalize">
-                        {sesion.estado === 'completada'
-                          ? 'Hecha'
-                          : sesion.estado === 'hoy'
-                            ? 'Hoy'
-                            : 'Pendiente'}
-                      </Badge>
-                      <ChevronRight className="size-4 text-muted-foreground md:hidden" />
-                    </div>
-                  </button>
-                ))}
-              </CardContent>
-            </Card>
+            <SemanaPlanCard
+              key={semana.numero}
+              semana={semana}
+              esActual={semana.numero === plan.semana_actual}
+              sesionSeleccionadaId={seleccionada?.id ?? null}
+              onSeleccionarSesion={seleccionarSesion}
+            />
           ))}
         </div>
 

@@ -10,6 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { AvisoComunidadAnimado } from '@/components/comunidades/ComunidadesMotion'
+import { CargaCrossfade, MetricaContador } from '@/components/motion/DashboardMotion'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   useComunidad,
@@ -17,6 +19,7 @@ import {
   useConfirmarEvento,
   useCancelarEvento,
 } from '@/lib/gateway/comunidades-hooks'
+import { useNow } from '@/hooks/use-now'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute(
@@ -35,15 +38,46 @@ function EventoDetallePage() {
   const confirmar = useConfirmarEvento(comunidadId)
   const cancelar = useCancelarEvento(comunidadId)
 
-  if (isLoading) {
-    return <Skeleton className="h-64 rounded-xl" />
-  }
-
-  if (isError || !evento || !comunidad) {
+  if (isError || (!isLoading && (!evento || !comunidad))) {
     throw notFound()
   }
 
-  const pasado = new Date(evento.inicioEn).getTime() < Date.now()
+  return (
+    <CargaCrossfade
+      loading={isLoading}
+      skeleton={<Skeleton className="h-64 rounded-xl" />}
+    >
+      {evento && comunidad ? (
+        <EventoDetalleContenido
+          comunidadId={comunidadId}
+          eventoId={eventoId}
+          evento={evento}
+          comunidad={comunidad}
+          confirmar={confirmar}
+          cancelar={cancelar}
+        />
+      ) : null}
+    </CargaCrossfade>
+  )
+}
+
+function EventoDetalleContenido({
+  comunidadId,
+  eventoId,
+  evento,
+  comunidad,
+  confirmar,
+  cancelar,
+}: {
+  comunidadId: string
+  eventoId: string
+  evento: NonNullable<ReturnType<typeof useComunidadEvento>['data']>
+  comunidad: NonNullable<ReturnType<typeof useComunidad>['data']>
+  confirmar: ReturnType<typeof useConfirmarEvento>
+  cancelar: ReturnType<typeof useCancelarEvento>
+}) {
+  const ahora = useNow()
+  const pasado = new Date(evento.inicioEn).getTime() < ahora
   const estado = evento.estadoParticipacion ?? 'ninguno'
   const confirmados = evento.participantes.filter(
     (p) => p.estado === 'confirmado',
@@ -102,11 +136,16 @@ function EventoDetallePage() {
             <MapPin className="size-4 shrink-0" aria-hidden />
             {evento.lugar}
           </p>
-          <p className="flex items-center gap-2">
+          <p className="flex items-center gap-2 tabular-nums">
             <Users className="size-4 shrink-0" aria-hidden />
-            {confirmados}
-            {evento.cupoMax !== null ? ` / ${evento.cupoMax}` : ''} participantes
-            confirmados
+            <MetricaContador valor={confirmados} className="inline" />
+            {evento.cupoMax !== null ? (
+              <>
+                {' / '}
+                <MetricaContador valor={evento.cupoMax} className="inline" />
+              </>
+            ) : null}{' '}
+            participantes confirmados
           </p>
         </CardContent>
       </Card>
@@ -146,17 +185,17 @@ function EventoDetallePage() {
         </div>
       )}
 
-      {suspendido && esMiembro && !pasado && (
+      <AvisoComunidadAnimado visible={suspendido && esMiembro && !pasado}>
         <p className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           Tu cuenta está suspendida. No puedes confirmar asistencia a eventos.
         </p>
-      )}
+      </AvisoComunidadAnimado>
 
-      {!esMiembro && !pasado && (
+      <AvisoComunidadAnimado visible={!esMiembro && !pasado}>
         <p className="rounded-xl border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
           Debes unirte a {comunidad.nombre} para confirmar tu participación.
         </p>
-      )}
+      </AvisoComunidadAnimado>
     </div>
   )
 }

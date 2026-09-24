@@ -25,6 +25,12 @@ type PlayerState = {
   setFase: (fase: FasePlayer) => void
   setDescanso: (seg: number) => void
   agregarSerieConfirmada: (serie: SerieRegistrada) => void
+  hidratarSeries: (
+    series: SerieRegistrada[],
+    ejercicioIndex: number,
+    serieIndex: number,
+    fase?: FasePlayer,
+  ) => void
   avanzarSerie: (totalSeries: number, totalEjercicios: number) => void
   setErrorGuardado: (msg: string | null) => void
   reset: () => void
@@ -68,6 +74,17 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       fase: 'rest',
       descansoSegundos: 90,
     })),
+
+  hidratarSeries: (series, ejercicioIndex, serieIndex, fase = 'idle') =>
+    set({
+      seriesConfirmadas: series,
+      seriesPendientes: false,
+      ejercicioIndex,
+      serieIndex,
+      fase,
+      descansoSegundos: 0,
+      errorGuardado: null,
+    }),
 
   avanzarSerie: (totalSeries, totalEjercicios) => {
     const { serieIndex, ejercicioIndex } = get()
