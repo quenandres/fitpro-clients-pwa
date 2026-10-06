@@ -31,12 +31,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  completarSesion,
-  guardarSerie,
-  iniciarSesion,
-  listarSeriesDeSesion,
-} from '@/lib/gateway/series'
+import { completarSesion, guardarSerie } from '@/lib/gateway/series'
+import { useSesionExecution } from '@/lib/gateway/series-hooks'
 import { useInvalidateSesionQueries, usePlan } from '@/lib/gateway/hooks'
 import { cursorDesdeSeries } from '@/lib/player-cursor'
 import { usePlayerStore } from '@/store/player-store'
@@ -135,11 +131,16 @@ function PlayerSesionActiva({
   navigate: ReturnType<typeof useNavigate>
   invalidateSesionQueries: ReturnType<typeof useInvalidateSesionQueries>
 }) {
-  const [executionSessionId, setExecutionSessionId] = useState<string | null>(
-    null,
-  )
-  const [iniciando, setIniciando] = useState(true)
+  const {
+    executionSessionId,
+    series,
+    isStarting,
+    isLoadingSeries,
+    isError: sesionExecError,
+  } = useSesionExecution(sesionId, true)
+  const iniciando = isStarting || isLoadingSeries
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const seriesHidratadasRef = useRef(false)
   const [dialogSalir, setDialogSalir] = useState(false)
   const [dialogTerminar, setDialogTerminar] = useState(false)
   const [terminando, setTerminando] = useState(false)
@@ -174,6 +175,7 @@ function PlayerSesionActiva({
   const totalSeries = ejercicio?.series ?? 0
 
   useEffect(() => {
+    seriesHidratadasRef.current = false
     const idx = Math.min(
       ejercicioInicio,
       Math.max(sesion.ejercicios.length - 1, 0),
@@ -185,50 +187,42 @@ function PlayerSesionActiva({
       ej?.peso_objetivo_kg ?? 0,
       ej?.repeticiones ?? 0,
     )
-    let cancelled = false
-    void iniciarSesion(sesionId)
-      .then(async (s) => {
-        if (cancelled) return
-        setExecutionSessionId(s.id)
-        const series = await listarSeriesDeSesion(s.id)
-        if (cancelled) return
-        const cursor = cursorDesdeSeries(sesion.ejercicios, series)
-        if (series.length > 0) {
-          const nextEj = sesion.ejercicios[cursor.ejercicioIndex]
-          hidratarSeries(
-            series,
-            cursor.ejercicioIndex,
-            cursor.serieIndex,
-            cursor.done ? 'done' : 'idle',
-          )
-          if (nextEj) {
-            setPeso(nextEj.peso_objetivo_kg ?? 0)
-            setRepeticiones(nextEj.repeticiones)
-          }
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setErrorGuardado('No se pudo abrir la sesión. Reintenta.')
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setIniciando(false)
-      })
     return () => {
-      cancelled = true
       reset()
     }
+    // sesion omitido: remount vía key en PlayerPage; evita re-iniciar si usePlan refetch.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sesionId, ejercicioInicio, initSesion, reset])
+
+  useEffect(() => {
+    if (sesionExecError) {
+      setErrorGuardado('No se pudo abrir la sesión. Reintenta.')
+    }
+  }, [sesionExecError, setErrorGuardado])
+
+  useEffect(() => {
+    if (!series || seriesHidratadasRef.current) return
+    seriesHidratadasRef.current = true
+    const cursor = cursorDesdeSeries(sesion.ejercicios, series)
+    if (series.length > 0) {
+      const nextEj = sesion.ejercicios[cursor.ejercicioIndex]
+      hidratarSeries(
+        series,
+        cursor.ejercicioIndex,
+        cursor.serieIndex,
+        cursor.done ? 'done' : 'idle',
+      )
+      if (nextEj) {
+        setPeso(nextEj.peso_objetivo_kg ?? 0)
+        setRepeticiones(nextEj.repeticiones)
+      }
+    }
   }, [
-    sesionId,
-    sesion,
-    ejercicioInicio,
-    initSesion,
-    reset,
+    series,
+    sesion.ejercicios,
     hidratarSeries,
     setPeso,
     setRepeticiones,
-    setErrorGuardado,
   ])
 
   useEffect(() => {

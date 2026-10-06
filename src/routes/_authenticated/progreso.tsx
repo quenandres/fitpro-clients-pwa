@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Camera, ImagePlus, Trash2 } from 'lucide-react'
@@ -27,7 +27,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { eliminarFoto, listarFotos, subirFoto } from '@/lib/gateway/fotos'
+import { eliminarFoto, subirFoto } from '@/lib/gateway/fotos'
+import {
+  progresoFotosQueryKey,
+  useProgresoFotos,
+} from '@/lib/gateway/hooks'
 import { cn } from '@/lib/utils'
 import type { FotoProgreso } from '@/types/dominio'
 
@@ -37,10 +41,7 @@ export const Route = createFileRoute('/_authenticated/progreso')({
 
 function ProgresoPage() {
   const queryClient = useQueryClient()
-  const { data: fotos = [] } = useQuery({
-    queryKey: ['progreso-fotos'],
-    queryFn: listarFotos,
-  })
+  const { data: fotos = [] } = useProgresoFotos()
   const [antesId, setAntesId] = useState<string | null>(null)
   const [despuesId, setDespuesId] = useState<string | null>(null)
   const [sheetAbierto, setSheetAbierto] = useState(false)
@@ -56,7 +57,7 @@ function ProgresoPage() {
     setError(null)
     try {
       const nueva = await subirFoto(file)
-      await queryClient.invalidateQueries({ queryKey: ['progreso-fotos'] })
+      await queryClient.invalidateQueries({ queryKey: progresoFotosQueryKey })
       if (!antesId) setAntesId(nueva.id)
       else if (!despuesId) setDespuesId(nueva.id)
       setSheetAbierto(false)

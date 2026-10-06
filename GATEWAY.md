@@ -2,7 +2,7 @@
 
 Actualizado: 2026-09-22
 
-Backend único: `gym-gateway`. No hay `gym-mcp` ni otro origen de API.
+Backend único: `gym-gateway`.
 
 ## Auth
 

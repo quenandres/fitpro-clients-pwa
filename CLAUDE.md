@@ -25,7 +25,7 @@ el historial, el perfil — está al servicio de eso.
   eso, cuestionarla (§9.4).
 - **Estado hoy (2026-09-22):** auth, plan, Hoy, player e historial hablan con
   `gym-gateway` (`training.sessions` / `session_sets`). La IA de rutinas vive
-  en el gateway (no hay `gym-mcp`). Iconos PWA aún pendientes.
+  en el gateway. Iconos PWA aún pendientes.
 
 ### Relación con los repos hermanos
 
@@ -56,7 +56,7 @@ hay que leer su documentación para trabajar aquí.
 | Motion | **Animate UI** (registry de shadcn, copy-first) sobre `motion` — capa de movimiento, no segundo set de componentes (C15) | Plan por fases e inventario por pantalla en `DESIGN.md §18` |
 | PWA | `vite-plugin-pwa` (`registerType: autoUpdate`, manifest `GYMApp`) — **faltan `public/pwa-192x192.png` y `pwa-512x512.png`** | Instalable; offline real después del MVP |
 | Compilador | **React Compiler** vía `babel-plugin-react-compiler` + `@rolldown/plugin-babel` | — |
-| Backend | **`../gym-gateway`** — auth, plan, sesiones, comunidades, fotos. IA de rutinas también está ahí (antes `gym-mcp`) | [GATEWAY.md](./GATEWAY.md) |
+| Backend | **`../gym-gateway`** — auth, plan, sesiones, comunidades, fotos e IA de rutinas | [GATEWAY.md](./GATEWAY.md) |
 | Supabase directo | `@supabase/supabase-js` instalado pero **sin usar** (C1) | Todo por el gateway |
 | Validación runtime | **Zod** — schemas en `lib/gateway/schemas.ts` | Ampliar con contratos de dominio |
 | Tests | — (sin Vitest, sin `*.test.ts`) | Vitest + @testing-library/react |

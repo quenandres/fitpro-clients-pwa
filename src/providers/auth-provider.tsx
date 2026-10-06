@@ -16,6 +16,13 @@ import {
   signup as gatewaySignup,
 } from '@/lib/gateway/auth'
 import {
+  authUserQueryKey,
+  fetchAuthUser,
+  invalidateDomainQueries,
+  removeDomainQueries,
+  useAuthUserQuery,
+} from '@/lib/gateway/hooks'
+import {
   getAccessToken,
   clearTokens,
   rememberAuthLinkError,
@@ -48,35 +55,14 @@ const AuthContext = createContext<AuthState | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
-  const [user, setUser] = useState<UsuarioGateway | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-
-  const refreshUser = useCallback(async () => {
-    if (isMockMode()) {
-      setUser(DEMO_CLIENT_USER)
-      return
-    }
-    const token = getAccessToken()
-    if (!token) {
-      setUser(null)
-      return
-    }
-    try {
-      const u = await getUser()
-      if (!rolPermitidoEnApp(u.role)) {
-        clearTokens()
-        setUser(null)
-        sessionStorage.setItem('fitpro_auth_motivo', 'rol')
-        return
-      }
-      setUser(u)
-    } catch {
-      clearTokens()
-      setUser(null)
-    }
-  }, [])
+  const mock = isMockMode()
+  const [mockUser, setMockUser] = useState<UsuarioGateway | null>(() =>
+    mock ? DEMO_CLIENT_USER : null,
+  )
+  const [inviteHandled, setInviteHandled] = useState(mock)
 
   useEffect(() => {
+    if (mock) return
     let cancelled = false
     void (async () => {
       const params = new URLSearchParams(window.location.search)
@@ -93,38 +79,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           rememberAuthLinkError()
         }
       }
-      await refreshUser()
-      if (!cancelled) setIsLoading(false)
+      if (!cancelled) setInviteHandled(true)
     })()
     return () => {
       cancelled = true
     }
-  }, [refreshUser])
+  }, [mock])
+
+  const authQuery = useAuthUserQuery(inviteHandled)
+
+  const user = mock
+    ? mockUser
+    : authQuery.data ?? (authQuery.isError ? null : null)
+
+  const isLoading = mock
+    ? false
+    : !inviteHandled ||
+      (Boolean(getAccessToken()) && authQuery.isPending && !authQuery.isFetched)
+
+  const refreshUser = useCallback(async () => {
+    if (mock) {
+      setMockUser(DEMO_CLIENT_USER)
+      return
+    }
+    if (!getAccessToken()) {
+      queryClient.setQueryData(authUserQueryKey, null)
+      return
+    }
+    await queryClient.invalidateQueries({ queryKey: authUserQueryKey })
+  }, [mock, queryClient])
 
   const login = useCallback(
     async (email: string, password: string) => {
-      if (isMockMode()) {
-        setUser(DEMO_CLIENT_USER)
-        queryClient.clear()
+      if (mock) {
+        setMockUser(DEMO_CLIENT_USER)
+        await invalidateDomainQueries(queryClient)
         return
       }
       await gatewayLogin(email, password)
-      const u = await getUser()
-      if (!rolPermitidoEnApp(u.role)) {
-        await gatewayLogout()
-        throw new Error('Esta app no está disponible para este tipo de cuenta.')
-      }
-      setUser(u)
-      queryClient.clear()
+      const u = await fetchAuthUser()
+      queryClient.setQueryData(authUserQueryKey, u)
+      await invalidateDomainQueries(queryClient)
     },
-    [queryClient],
+    [mock, queryClient],
   )
 
   const signup = useCallback(
     async (email: string, password: string) => {
-      if (isMockMode()) {
-        setUser(DEMO_CLIENT_USER)
-        queryClient.clear()
+      if (mock) {
+        setMockUser(DEMO_CLIENT_USER)
+        await invalidateDomainQueries(queryClient)
         return { needsEmailConfirmation: false }
       }
       const { needsEmailConfirmation, tokens } = await gatewaySignup(
@@ -133,38 +137,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       )
       if (tokens) {
         const u = await getUser()
-        setUser(u)
-        queryClient.clear()
+        if (!rolPermitidoEnApp(u.role)) {
+          await gatewayLogout()
+          throw new Error('Esta app no está disponible para este tipo de cuenta.')
+        }
+        queryClient.setQueryData(authUserQueryKey, u)
+        await invalidateDomainQueries(queryClient)
       }
       return { needsEmailConfirmation }
     },
-    [queryClient],
+    [mock, queryClient],
   )
 
   const resetPassword = useCallback(
     async (email: string, token: string, password: string) => {
-      if (isMockMode()) {
-        setUser(DEMO_CLIENT_USER)
-        queryClient.clear()
+      if (mock) {
+        setMockUser(DEMO_CLIENT_USER)
+        await invalidateDomainQueries(queryClient)
         return
       }
       await gatewayResetPassword(email, token, password)
-      const u = await getUser()
-      if (!rolPermitidoEnApp(u.role)) {
-        await gatewayLogout()
-        throw new Error('Esta app no está disponible para este tipo de cuenta.')
-      }
-      setUser(u)
-      queryClient.clear()
+      const u = await fetchAuthUser()
+      queryClient.setQueryData(authUserQueryKey, u)
+      await invalidateDomainQueries(queryClient)
     },
-    [queryClient],
+    [mock, queryClient],
   )
 
   const logout = useCallback(async () => {
-    if (isMockMode()) {
+    if (mock) {
       clearTokens()
-      setUser(DEMO_CLIENT_USER)
-      queryClient.clear()
+      setMockUser(DEMO_CLIENT_USER)
+      removeDomainQueries(queryClient)
       return
     }
     try {
@@ -172,9 +176,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       clearTokens()
     }
-    setUser(null)
-    queryClient.clear()
-  }, [queryClient])
+    removeDomainQueries(queryClient)
+  }, [mock, queryClient])
 
   const value: AuthState = {
     user,
